@@ -267,3 +267,66 @@ DetermineNumberOfClusters <- function(data,k_max,plot=FALSE,smooth=0.2,
   print(elbow)
 }
 
+
+# Plots
+
+# Cluster Dendrogram
+
+dendrogram_barplot <- function(data, dist_method = 'euclidean', 
+    hclust_method = 'ward.D'){
+
+    # Dendrogram
+    dist_mat <- dist(data, method = dist_method)
+    hclust_avg <- hclust(dist_mat, method = hclust_method)
+    par(mar=c(2,7,4,2), lwd=2)
+    plot(hclust_avg,cex = 0.8, hang = -1)
+
+    if(ncol(data)>8){
+        ncol_bp <- 6
+        cex_bp <- 0.6
+    } else {
+        ncol_bp <- 4
+        cex_bp <- 0.75
+    }
+
+    # Barplot
+    coul = brewer.pal(9, "Set1")
+    data <- data[hclust_avg$order,] #dendrogram order
+    data <- t(as.matrix(data))
+    par(las=1)
+    par(mar=c(4,6,1,2), lwd = 0.1)
+    par(mgp=c(3,0.5,0))
+    barplot(data,
+            col=coul ,
+            border='white',
+            horiz=TRUE,
+            cex.names=1,
+            cex.axis = 1,
+            ylim = c(0,15))
+    title(ylab="Patient ID", mgp=c(3.8,2,2), cex.lab=1.2)
+    title(xlab="Cell type (% of sample)",  mgp=c(2,1,0), cex.lab=1.2)
+    legend('top', legend = rownames(data), fill = coul, ncol = ncol_bp,
+           cex = cex_bp)
+
+}
+
+corr_plot <- function(data, rcorr_type = 'spearman', p.adjust_method = 'BH'){
+
+    res <- Hmisc::rcorr(as.matrix(data), type = rcorr_type) #for corr plot
+    # corrplot
+    corrected_pvals <- p.adjust(res$P, method = p.adjust_method)
+    corrected_pvals <- matrix(corrected_pvals, nrow = ncol(res$P), 
+        ncol = ncol(res$P))
+    colnames(corrected_pvals)<- colnames(res$P)
+    rownames(corrected_pvals)<- rownames(res$P)
+
+    par(font = 2) # bold axis
+    par(cex=0.9)
+    par(lwd = 1.2)
+    corrplot::corrplot(res$r, type="upper", order='original', tl.col = "black", 
+        tl.srt = 45, p.mat = corrected_pvals , sig.level = 0.05, 
+        insig = "blank", method = 'color', addCoef.col="black", 
+        number.font = 1, number.cex = 0.95, addgrid.col = 'grey', tl.cex = 1)    
+}
+
+

@@ -1,5 +1,11 @@
+#########################################################
+# Data without CD90
+#########################################################
+
 # Load data
-#load("woCD90.RData")
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/woCD90.RData")
+
+# Source code
 source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/clustering_f.R")
 
 # Clustering
@@ -42,6 +48,53 @@ save(hm_data, tsne_data, umap_data, annot_df, prcnt_by_pt, file = 'majorcelltype
 # Do this for both, wCD90 woCD90 separately and then merge.
 # Subset cell types for further subtyping
 
+#########################################################
+# Data with CD90
+#########################################################
+
+# Load data
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/withCD90.RData")
+
+# Source code
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/clustering_f.R")
+
+
+# Clustering
+dt_cl <- clustering(big_df, n_clusters = 12, iterations = 200, seed = 45)
+# 15 20 29 31 37 40 49
+
+# Clustering Evaluation
+hm_data <- ClusterEval_data(dt_cl, eval_type = 'heatmap')
+ClusterEval_plot(hm_data, data_type = 'heatmap')
+
+tsne_data <- ClusterEval_data(dt_cl, eval_type = 'tSNE', sample_size = 25000)
+ClusterEval_plot(tsne_data, data_type = 'tSNE')
+
+umap_data <- ClusterEval_data(dt_cl, eval_type = 'UMAP', sample_size = 25000)
+ClusterEval_plot(umap_data, data_type = 'UMAP')
+
+table(dt_cl$cluster)/nrow(dt_cl)*100
+
+# Cluster annotation
+epithelial <- c(1,2,4)
+endothelial <- c(7)
+fibroblasts <- c(9)
+mesenchymal <- c(11)
+immune <- c(3,5,6,8,12)
+nothing <- c(10)
+
+ct_ls <- list('Epithelial'= epithelial, 'Endothelial'=endothelial, 
+                   'Fibroblasts' = fibroblasts, 'Mesenchymal'=mesenchymal, 
+                   'Immune'=immune, 'Nothing'=nothing)
+
+annot_df <- ClusterAnnotation(data = big_df, df_cluster = dt_cl, 
+    ls_annotation = ct_ls, annotation_col = 'cell_type', cl_delete = T, 
+    cl_delete_name = 'Nothing')
+
+prcnt_by_pt <- ClassAbundanceByPt(data=annot_df, ptID_col = 'pt_ID', 
+    class_col = 'cell_type')
+
+save(hm_data, tsne_data, umap_data, annot_df, prcnt_by_pt, file = 'majorcelltypes.RData')
 
 ##########################################
 # ***Only for first 11 tumors***
@@ -173,10 +226,6 @@ load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/woCD90.RData")
 save(ref, annot_df, file = 'cellsubtypes.RData')
 
 
-
-
-prcnt_by_pt <- ClassAbundanceByPt(data=annot_df, ptID_col = 'pt_ID', 
-    class_col = 'subtype')
 
 
 

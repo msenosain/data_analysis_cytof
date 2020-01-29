@@ -367,6 +367,13 @@ boxplots_m <- function(data, col_name, cell_pop){
 
 }
 
+edit_caps <- function(df, col_name, var_oldname, var_newname){
+  df[col_name]<- as.character(df[col_name])
+  k <- which(df[col_name] == var_oldname)
+  df[k,col_name] <- var_newname
+  df[col_name]<- as.factor(df[col_name])
+}
+
 
 
 

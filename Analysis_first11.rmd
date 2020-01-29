@@ -69,11 +69,7 @@ dendrogram_barplot(prcnt_by_pt)
 corr_plot(prcnt_by_pt)
 ```
 
-```{r echo=FALSE, fig.width = 5, fig.height = 1.5}
-par(mar=c(4,4,4,4))
-par(font = 2) # bold axis
-par(cex=1)
-par(lwd = 1.2)
+```{r echo=FALSE, fig.width = 5, fig.height = 2}
 # Scatter plots
 ggpubr::ggscatter(prcnt_by_pt, x = "Th_cells", y = c('Epithelial_7', 'Epithelial_8', 'Epithelial_9'),
           add = "reg.line", conf.int = TRUE, combine = TRUE,
@@ -585,3 +581,36 @@ knitr::include_graphics(subtypes_rhneg_path)
 knitr::include_graphics(subtypes_rhnpos_path)
 ```
 
+# Other Comparisons
+
+```{r, echo=FALSE, fig.width = 7, fig.height = 7, warning=FALSE}
+boxplots_m(annot_df, col_name = 'cell_type', cell_pop = 'endothelial')
+```
+
+```{r, echo=FALSE, fig.width = 7, fig.height = 7, warning=FALSE}
+boxplots_m(annot_df, col_name = 'cell_type', cell_pop = 'mesenchymal')
+```
+
+```{r, echo=FALSE, fig.width = 7, fig.height = 7, warning=FALSE}
+boxplots_m(annot_df, col_name = 'subtype', cell_pop = 'Myeloid')
+```
+
+```{r, echo=FALSE, fig.width = 7, fig.height = 7, warning=FALSE}
+boxplots_m(annot_df, col_name = 'subtype2', cell_pop = 'T_cells')
+```
+
+```{r, echo=FALSE, fig.width = 7, fig.height = 7, warning=FALSE}
+boxplots_m(annot_df, col_name = 'subtype', cell_pop = 'NK_cells')
+```
+
+```{r, echo=FALSE, fig.width = 7, fig.height = 7, warning=FALSE}
+boxplots_m(annot_df, col_name = 'subtype', cell_pop = 'Th_cells')
+```
+
+```{r, echo=FALSE, fig.width = 7, fig.height = 7, warning=FALSE}
+boxplots_m(annot_df, col_name = 'subtype', cell_pop = 'Tc_cells')
+```
+
+```{r, echo=FALSE, fig.width = 7, fig.height = 7, warning=FALSE}
+boxplots_m(annot_df, col_name = 'cell_type', cell_pop = 'epithelial')
+```

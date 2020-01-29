@@ -330,3 +330,44 @@ corr_plot <- function(data, rcorr_type = 'spearman', p.adjust_method = 'BH'){
 }
 
 
+
+boxplots_m <- function(data, col_name, cell_pop){
+    sbst <- data[which(data[,col_name] %in% cell_pop),]
+    sbst <- subset(sbst, CANARY %in% c('G', 'P'))
+    sbst <- denoisingCTF::t_asinh(sbst)
+
+    markers <- colnames(sbst)[c(15, 17:31, 33:35, 37:48, 50, 51)]
+    markers <- sapply(strsplit(markers, "_"), "[[", 2)
+    markers <- gsub('-', '', markers)
+    colnames(sbst)[c(15, 17:31, 33:35, 37:48, 50, 51)] <- markers
+
+    library(dplyr)
+    x <- sbst%>%
+      group_by(CANARY)%>% 
+      summarise_at(markers, median)
+    x <- x[,-1]
+    x <- t(x)
+    k <- which(x[,1]<1.5 & x[,2]<1.5)
+
+    markers <- markers[-k]
+
+    sbst <- reshape2::melt(sbst)
+    sbst <- subset(sbst, variable %in% markers)
+
+    ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+       geom_boxplot() +
+       ylim(0,12)+
+       ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+              map_signif_level=TRUE) +
+       facet_wrap(~variable) +
+       ggtitle(cell_pop) +
+       theme(plot.title = element_text(hjust = 0.5, size=22))
+
+    # plotly::ggplotly(p) only if not using ggsignif pckg
+
+}
+
+
+
+
+

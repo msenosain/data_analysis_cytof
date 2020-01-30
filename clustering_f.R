@@ -294,8 +294,8 @@ dendrogram_barplot <- function(data, dist_method = 'euclidean',
     data <- data[hclust_avg$order,] #dendrogram order
     data <- t(as.matrix(data))
     par(las=1) # orientation, 1=horizontal
-    #par(mar=c(4,6,1,2), lwd = 0.1) # mar: margins, lwd: line width
-    #par(mgp=c(3,0.5,0)) # axis label locations
+    par(mar=c(4,6,1,2)) #, lwd = 0.1) # mar: margins, lwd: line width
+    par(mgp=c(3,0.5,0)) # axis label locations
     barplot(data,
             col=coul ,
             border='white',
@@ -331,8 +331,8 @@ corr_plot <- function(data, rcorr_type = 'spearman', p.adjust_method = 'BH'){
 
 
 
-boxplots_m <- function(data, col_name, cell_pop){
-    sbst <- data[which(data[,col_name] %in% cell_pop),]
+boxplots_m <- function(sbst, col_name, cell_pop){
+    sbst <- sbst[which(sbst[,col_name] %in% cell_pop),]
     sbst <- subset(sbst, CANARY %in% c('G', 'P'))
     sbst <- denoisingCTF::t_asinh(sbst)
 

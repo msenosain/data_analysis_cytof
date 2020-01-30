@@ -1,0 +1,67 @@
+---
+title: "Analysis complete set of samples - part 2"
+author: "Mafe Senosain"
+date: "1/30/2020"
+output:
+    html_document:
+        toc: true
+        toc_float: true
+---
+
+```{r setup, include=FALSE}
+library(ggplot2)
+library(RColorBrewer)
+knitr::opts_chunk$set(echo = FALSE)
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/clustering_f.R")
+```
+
+```{r, echo=FALSE}
+# Load data
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/cellsubtypes.RData")
+```
+
+```{r, echo=FALSE}
+# Organizing data
+
+# All cell/sub types B have Fib_Mesenchymal
+ref <- ref[-42,] # sample 13376 has been collected twice and will be merged, only one ref is needed
+grp <- 'B'
+```
+
+## Other Comparisons
+
+```{r, echo=FALSE, fig.width = 7, fig.height = 7, warning=FALSE}
+boxplots_m(annot_df, col_name = paste0('cell_type_', grp), cell_pop = 'Endothelial')
+```
+
+```{r, echo=FALSE, fig.width = 7, fig.height = 7, warning=FALSE}
+boxplots_m(annot_df, col_name = paste0('cell_type_', grp), cell_pop = 'Fib_Mesenchymal')
+```
+
+```{r, echo=FALSE, fig.width = 7, fig.height = 7, warning=FALSE}
+boxplots_m(annot_df, col_name = paste0('cell_type_', grp), cell_pop = 'Immune')
+```
+
+```{r, echo=FALSE, fig.width = 7, fig.height = 7, warning=FALSE}
+boxplots_m(annot_df, col_name = paste0('subtype_', grp), cell_pop = 'Myeloid')
+```
+
+```{r, echo=FALSE, fig.width = 7, fig.height = 7, warning=FALSE}
+boxplots_m(annot_df, col_name = paste0('subtype_', grp, '2'), cell_pop = 'T_cells')
+```
+
+```{r, echo=FALSE, fig.width = 7, fig.height = 7, warning=FALSE}
+boxplots_m(annot_df, col_name = paste0('subtype_', grp), cell_pop = 'NK_cells')
+```
+
+```{r, echo=FALSE, fig.width = 7, fig.height = 7, warning=FALSE}
+boxplots_m(annot_df, col_name = paste0('subtype_', grp), cell_pop = 'Th_cells')
+```
+
+```{r, echo=FALSE, fig.width = 7, fig.height = 7, warning=FALSE}
+boxplots_m(annot_df, col_name = paste0('subtype_', grp), cell_pop = 'Tc_cells')
+```
+
+```{r, echo=FALSE, fig.width = 7, fig.height = 7, warning=FALSE}
+boxplots_m(annot_df, col_name = paste0('cell_type_', grp), cell_pop = 'Epithelial')
+```

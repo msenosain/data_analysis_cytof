@@ -278,7 +278,7 @@ dendrogram_barplot <- function(data, dist_method = 'euclidean',
     # Dendrogram
     dist_mat <- dist(data, method = dist_method)
     hclust_avg <- hclust(dist_mat, method = hclust_method)
-    par(mar=c(2,7,4,2), lwd=2)
+    #par(mar=c(2,7,4,2), lwd=2)
     plot(hclust_avg,cex = 0.8, hang = -1)
 
     if(ncol(data)>8){
@@ -293,9 +293,9 @@ dendrogram_barplot <- function(data, dist_method = 'euclidean',
     coul = brewer.pal(9, "Set1")
     data <- data[hclust_avg$order,] #dendrogram order
     data <- t(as.matrix(data))
-    par(las=1)
-    par(mar=c(4,6,1,2), lwd = 0.1)
-    par(mgp=c(3,0.5,0))
+    par(las=1) # orientation, 1=horizontal
+    #par(mar=c(4,6,1,2), lwd = 0.1) # mar: margins, lwd: line width
+    #par(mgp=c(3,0.5,0)) # axis label locations
     barplot(data,
             col=coul ,
             border='white',
@@ -320,9 +320,9 @@ corr_plot <- function(data, rcorr_type = 'spearman', p.adjust_method = 'BH'){
     colnames(corrected_pvals)<- colnames(res$P)
     rownames(corrected_pvals)<- rownames(res$P)
 
-    par(font = 2) # bold axis
-    par(cex=0.9)
-    par(lwd = 1.2)
+    par(font = 2) # bold axis labels
+    par(cex=0.9) # size
+    par(lwd = 1.2) # line width
     corrplot::corrplot(res$r, type="upper", order='original', tl.col = "black", 
         tl.srt = 45, p.mat = corrected_pvals , sig.level = 0.05, 
         insig = "blank", method = 'color', addCoef.col="black", 

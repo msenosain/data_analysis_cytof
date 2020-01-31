@@ -6,7 +6,7 @@
 load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/woCD90.RData")
 
 # Source code
-source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/clustering_f.R")
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/ClustAnnot_functions.R")
 
 # Clustering
 dt_cl <- clustering(big_df, n_clusters = 10, iterations = 200, seed = 45) 
@@ -56,7 +56,7 @@ save(hm_data, tsne_data, umap_data, annot_df, prcnt_by_pt, file = 'majorcelltype
 load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/withCD90.RData")
 
 # Source code
-source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/clustering_f.R")
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/ClustAnnot_functions.R")
 
 
 # Clustering
@@ -104,7 +104,7 @@ save(hm_data, tsne_data, umap_data, annot_df, prcnt_by_pt, file = 'majorcelltype
 #save(annot_df, ref, annot_df_wo, ref_wo, file = 'majorcelltypes.RData')
 
 # Source code
-source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/clustering_f.R")
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/ClustAnnot_functions.R")
 
 annot_df <- change_colname(annot_df, 'cell_type', 'cell_type_A')
 annot_df_wo <- change_colname(annot_df_wo, 'cell_type', 'cell_type_A')
@@ -384,7 +384,52 @@ load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/woCD90.RData")
 save(ref, annot_df, file = 'cellsubtypes.RData')
 
 
+#####################################################
+# Controls clustering
+#####################################################
 
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/CyTOF_ADC_controls.RData")
+
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/ClustAnnot_functions.R")
+
+
+# Clustering
+dt_cl <- clustering(big_df, n_clusters = 2, iterations = 200, seed = 45) 
+# 15 20 29 31 37 40
+# 15, 17:31, 33:35, 37:48, 50, 51
+# 15 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 33 34 35 37 38 39 40 41 42 43 44 45 46 47 48 50 51
+
+# Clustering Evaluation
+hm_data <- ClusterEval_data(dt_cl, eval_type = 'heatmap')
+ClusterEval_plot(hm_data, data_type = 'heatmap')
+
+tsne_data <- ClusterEval_data(dt_cl, eval_type = 'tSNE', sample_size = 25000)
+ClusterEval_plot(tsne_data, data_type = 'tSNE')
+
+umap_data <- ClusterEval_data(dt_cl, eval_type = 'UMAP', sample_size = 25000)
+ClusterEval_plot(umap_data, data_type = 'UMAP')
+
+table(dt_cl$cluster)/nrow(dt_cl)*100
+
+# Cluster annotation
+epithelial <- c(6,7,9,10)
+endothelial <- c(8)
+mesenchymal <- c(4)
+immune <- c(1,2,3)
+nothing <- c(5)
+#unknown <- c(6)
+
+ct_ls <- list('Epithelial'= epithelial, 'Endothelial'=endothelial, 
+                   'Mesenchymal'=mesenchymal, 'Immune'=immune, 'Nothing'=nothing)
+
+annot_df <- ClusterAnnotation(data = big_df, df_cluster = dt_cl, 
+    ls_annotation = ct_ls, annotation_col = 'cell_type', cl_delete = T, 
+    cl_delete_name = 'nothing')
+
+prcnt_by_pt <- ClassAbundanceByPt(data=annot_df, ptID_col = 'pt_ID', 
+    class_col = 'cell_type')
+
+save(hm_data, tsne_data, umap_data, annot_df, prcnt_by_pt, file = 'majorcelltypes.RData')
 
 
 

@@ -395,8 +395,6 @@ source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/Clu
 
 # Clustering
 dt_cl <- clustering(big_df, n_clusters = 2, iterations = 200, seed = 45) 
-# 15 20 29 31 37 40
-# 15, 17:31, 33:35, 37:48, 50, 51
 # 15 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 33 34 35 37 38 39 40 41 42 43 44 45 46 47 48 50 51
 
 # Clustering Evaluation
@@ -412,28 +410,14 @@ ClusterEval_plot(umap_data, data_type = 'UMAP')
 table(dt_cl$cluster)/nrow(dt_cl)*100
 
 # Cluster annotation
-epithelial <- c(6,7,9,10)
-endothelial <- c(8)
-mesenchymal <- c(4)
-immune <- c(1,2,3)
-nothing <- c(5)
-#unknown <- c(6)
+A549 <- c(2)
+Ramos <- c(1)
 
-ct_ls <- list('Epithelial'= epithelial, 'Endothelial'=endothelial, 
-                   'Mesenchymal'=mesenchymal, 'Immune'=immune, 'Nothing'=nothing)
+ct_ls <- list('A549'=A549, 'Ramos'=Ramos)
 
-annot_df <- ClusterAnnotation(data = big_df, df_cluster = dt_cl, 
-    ls_annotation = ct_ls, annotation_col = 'cell_type', cl_delete = T, 
-    cl_delete_name = 'nothing')
-
-prcnt_by_pt <- ClassAbundanceByPt(data=annot_df, ptID_col = 'pt_ID', 
-    class_col = 'cell_type')
-
-save(hm_data, tsne_data, umap_data, annot_df, prcnt_by_pt, file = 'majorcelltypes.RData')
+annot_df_ctl <- ClusterAnnotation(data = big_df, df_cluster = dt_cl, 
+    ls_annotation = ct_ls, annotation_col = 'cell_line')
 
 
-
-
-
-
+save(hm_data, tsne_data, umap_data, annot_df_ctl, ref, file = 'annotated_controls.RData')
 

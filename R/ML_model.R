@@ -1,10 +1,18 @@
 
 
 ML_model <- function(df, balance = T, sample_size = 100000, train_size = 0.75,
+    subset_celltype = F, celltype_col = celltype_col, celltype_name = celltype_name
     alg = c('all', 'RF', 'XGB'), class_col = class_col, seed = seed, 
     label = label, allowParallel = TRUE, free_cores = 4){
     # Subset G and P
     df <- subset(df, CANARY %in% c('G', 'P'))
+
+    # subset a cell type
+    if(subset_celltype){
+        df <- subset(df, )
+        df <- df[df[,celltype_col] %in% celltype_name,]
+    }
+    
 
     # Sample balanced classes
     if(balance){

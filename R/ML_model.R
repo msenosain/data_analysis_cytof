@@ -10,7 +10,7 @@ ML_model <- function(df, balance = T, sample_size = 100000, train_size = 0.75,
     if(balance){
         k_G <- sample(which(df$CANARY == 'G'), sample_size/2)
         k_P <- sample(which(df$CANARY == 'P'), sample_size/2)
-        df <- [c(k_G,k_P),]
+        df <- df[c(k_G,k_P),]
     }else{
         df <- dplyr::sample_n(df, size=sample_size)
     }

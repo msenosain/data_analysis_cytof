@@ -1,82 +1,55 @@
 
+DA_analysis <- function(df, ref, class_col, group_levels, group_col, 
+    ptID_col = 'pt_ID'){
 
-DA_analysis <- function(df, ref, class_col, CANARY_groups=c('G', 'I', 'P')){
+
+    if(length(group_levels) != 2){
+        stop('Differential abundance analysis requieres a vector of length 2 for group_levels')
+    }
 
     library(operators)
     library(dplyr)
 
-    if('I' %!in% CANARY_groups){
-        ref <- ref[-42,] # remove extra sample from 13376 patient
-        df <- subset(df, CANARY %in% CANARY_groups)
-        ref <- subset(ref, CANARY %in% CANARY_groups)
+    ref <- ref[-42,] # remove extra sample from 13376 patient
+    df <- df[df[,group_col] %in% group_levels,]
+    ref <- ref[ref[,group_col] %in% group_levels,]
 
-        prcnt_by_pt <- ClassAbundanceByPt(data=df, ptID_col = 'pt_ID', 
-            class_col = class_col)
-        ref <- data.frame(row.names = ref[,'pt_ID'], 
-            CANARY = ref[,'CANARY'], nothing = rep(0, nrow(prcnt_by_pt)))
+    prcnt_by_pt <- ClassAbundanceByPt(data=df, ptID_col = ptID_col, 
+        class_col = class_col)
+    ref <- data.frame(row.names = ref[,ptID_col], 
+        CANARY = ref[,group_col], nothing = rep(0, nrow(prcnt_by_pt)))
 
-        # Making sure that order matches
-        ref <- ref[order(rownames(ref)),]
-        prcnt_by_pt <- prcnt_by_pt[order(rownames(prcnt_by_pt)),]
+    # Making sure that order matches
+    ref <- ref[order(rownames(ref)),]
+    prcnt_by_pt <- prcnt_by_pt[order(rownames(prcnt_by_pt)),]
 
-        # Separating matrices by group
-        g_i <- which(ref$CANARY == 'G')     
-        p_i <- which(ref$CANARY == 'P')
+    # Separating matrices by group
+    g_i <- which(ref[,group_col] == group_levels[1])
+    p_i <- which(ref[,group_col] == group_levels[2])
 
-        g_t <- compositions::clr(prcnt_by_pt[g_i,])
-        p_t <- compositions::clr(prcnt_by_pt[p_i,])
+    g_t <- compositions::clr(prcnt_by_pt[g_i,])
+    p_t <- compositions::clr(prcnt_by_pt[p_i,])
 
-        RA_raw <- rbind(prcnt_by_pt[g_i,], prcnt_by_pt[p_i,])
+    RA_raw <- rbind(prcnt_by_pt[g_i,], prcnt_by_pt[p_i,])
 
-        RA_clrt <- rbind(g_t, p_t)
-        ref_t <- rbind(ref[g_i,], ref[p_i,])
-        ref_t$nothing <- NULL
+    RA_clrt <- rbind(g_t, p_t)
+    ref_t <- rbind(ref[g_i,], ref[p_i,])
+    ref_t$nothing <- NULL
 
-        pv <- c()
-        for(i in 1:ncol(RA_clrt)){
-            pv <- c(pv, wilcox.test(g_t[,i], p_t[,i])$p.value)
-        }
-
-        pvals <- data.frame('cell_type' = colnames(RA_clrt), 'p.value' = pv)
-        pv_method <- "Wilcoxon rank sum test"
-
-    } else {
-        df <- subset(df, CANARY %in% CANARY_groups)
-        ref <- subset(ref, CANARY %in% CANARY_groups)
-
-        prcnt_by_pt <- ClassAbundanceByPt(data=df, ptID_col = 'pt_ID', 
-            class_col = class_col)
-        ref <- data.frame(row.names = rownames(prcnt_by_pt), 
-            CANARY = ref[-42,'CANARY'], nothing = rep(0, nrow(prcnt_by_pt)))
-
-        g_i <- which(ref$CANARY == 'G')
-        i_i <- which(ref$CANARY == 'I') 
-        p_i <- which(ref$CANARY == 'P')
-
-        g_t <- compositions::clr(prcnt_by_pt[g_i,])
-        i_t <- compositions::clr(prcnt_by_pt[i_i,])
-        p_t <- compositions::clr(prcnt_by_pt[p_i,])
-
-        RA_raw <- rbind(prcnt_by_pt[g_i,], prcnt_by_pt[p_i,])
-
-        RA_clrt <- rbind(g_t, i_t, p_t)
-        ref_t <- rbind(ref[g_i,], ref[i_i,], ref[p_i,])
-        ref_t$nothing <- NULL
-
-        pv <- c()
-        for(i in 1:ncol(RA_clrt)){
-            pv <- c(pv, kruskal.test(list(g_t[,i], i_t[,i], p_t[,i]))$p.value)
-        }
-
-        pvals <- data.frame('cell_type' = colnames(RA_clrt), 'p.value' = pv)
-        pv_method <- "Kruskal-Wallis rank sum test"
+    pv <- c()
+    for(i in 1:ncol(RA_clrt)){
+        pv <- c(pv, wilcox.test(g_t[,i], p_t[,i])$p.value)
     }
+
+    pvals <- data.frame('cell_type' = colnames(RA_clrt), 'p.value' = pv)
+    pv_method <- "Wilcoxon rank sum test"
 
     DA_results <- list('RA_raw'=RA_raw, 'RA_clrt'=RA_clrt, 'ref_t'=ref_t, 
         'pvals'=pvals, 'pv_method'=pv_method)
-    return(DA_results)
 
+    return(DA_results)
 }
+
 
 
 #pheatmap(prcnt_t, cluster_cols = T, cluster_rows = F, annotation_row = ref2_t, 

@@ -9,7 +9,6 @@ ML_model <- function(df, balance = T, sample_size = 100000, train_size = 0.75,
 
     # subset a cell type
     if(subset_celltype){
-        df <- subset(df, )
         df <- df[df[,celltype_col] %in% celltype_name,]
     }
     
@@ -24,7 +23,7 @@ ML_model <- function(df, balance = T, sample_size = 100000, train_size = 0.75,
     }
     
     # Training and test sets
-    train_i <- caret::createDataPartition(y=CANARY, p=train_size, list=FALSE)
+    train_i <- caret::createDataPartition(df$CANARY, p=train_size, list=FALSE)
     df_train <- df[train_i,]
     df_test <- df[-train_i,]
 
@@ -38,7 +37,8 @@ ML_model <- function(df, balance = T, sample_size = 100000, train_size = 0.75,
 TrainModel <- function(TrainSet, TestSet, alg = c('all', 'RF', 'XGB'), 
     class_col = class_col, seed = 40, label = label, allowParallel = TRUE, 
     free_cores = 4){
-    # name_0 == 'cells' |  name_1 == 'debris'/'beads'/'dead'
+    library(caret)
+
     # Set seed
     set.seed(seed)    
     
@@ -52,8 +52,8 @@ TrainModel <- function(TrainSet, TestSet, alg = c('all', 'RF', 'XGB'),
     features <- colnames(TrainSet)[features]
     features <- features[order(features)]
 
-    TrainSet <- t_asinh(TrainSet[c(class_col, features)])
-    TestSet <- t_asinh(TestSet[c(class_col, features)])
+    TrainSet <- denoisingCTF::t_asinh(TrainSet[c(class_col, features)])
+    TestSet <- denoisingCTF::t_asinh(TestSet[c(class_col, features)])
 
     colnames(TrainSet) <- c(class_col, features)
 
@@ -100,11 +100,11 @@ TrainModel <- function(TrainSet, TestSet, alg = c('all', 'RF', 'XGB'),
         conf_rf <- caret::confusionMatrix(
             reference = as.factor(TestSet[,1]),
             data = pred_rf,
-            mode = 'everything',
-            positive = name_1)
+            mode = 'everything')
 
         #save RData
-        save(model_rf, ftimp_rf, pred_rf, conf_rf, file = paste0(label, '_RFmodel.RData'))
+        save(model_rf, ftimp_rf, pred_rf, conf_rf, TrainSet, TestSet,
+            file = paste0(label, '_RFmodel.RData'))
         print('Random Forest completed')
         
         # Finalizing parallelization
@@ -166,11 +166,11 @@ TrainModel <- function(TrainSet, TestSet, alg = c('all', 'RF', 'XGB'),
         conf_xgb <- caret::confusionMatrix(
             reference = as.factor(y_test),
             data = pred_xgb,
-            mode = 'everything',
-            positive = name_1)
+            mode = 'everything')
 
         # Save RData
-        save(model_xgb, ftimp_xgb, pred_xgb, conf_xgb, file = paste0(label, '_XGBmodel.RData'))
+        save(model_xgb, ftimp_xgb, pred_xgb, conf_xgb, 
+            TrainSet, TestSet, file = paste0(label, '_XGBmodel.RData'))
         print('XGBoost completed')
     }
 

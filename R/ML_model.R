@@ -1,42 +1,84 @@
+equal_sampling <- function(df, group_col = 'CANARY', ptID_col = 'pt_ID', 
+    groups = c('G', 'P')){
+    
+    # Subset groups
+    df <- df[which(df[,group_col] %in% groups),]
+
+    ptids <- unique(df[,ptID_col])
+
+    # Get min number of cells among samples
+    k <- min(table(df[,ptID_col]))
+
+    idx <- c()
+    for(i in ptids){
+        idx <- c(idx, sample(which(df[,ptID_col] == i), k))
+    }
+    df <- df[idx,]
+
+    df
+}
 
 
-ML_model <- function(df, balance = T, sample_size = 100000, train_size = 0.75,
-    subset_celltype = F, celltype_col = celltype_col, celltype_name = celltype_name,
-    alg = c('all', 'RF', 'XGB'), class_col = class_col, seed = seed, 
-    label = label, allowParallel = TRUE, free_cores = 4){
-    # Subset G and P
-    df <- subset(df, CANARY %in% c('G', 'P'))
+
+ML_model <- function(df, 
+                        balance = T, 
+                        train_size = 0.75,
+                        subset_celltype = F, 
+                        celltype_col = celltype_col, 
+                        celltype_name = celltype_name,
+                        ask_features = T, 
+                        ft_idxs, 
+                        alg = c('all', 'RF', 'XGB'), 
+                        class_col = class_col, 
+                        seed = seed, 
+                        label = label, 
+                        allowParallel = TRUE, 
+                        workers = 4){
 
     # subset a cell type
     if(subset_celltype){
         df <- df[df[,celltype_col] %in% celltype_name,]
     }
-    
 
-    # Sample balanced classes
-    if(balance){
-        k_G <- sample(which(df$CANARY == 'G'), sample_size/2)
-        k_P <- sample(which(df$CANARY == 'P'), sample_size/2)
-        df <- df[c(k_G,k_P),]
-    }else{
-        df <- dplyr::sample_n(df, size=sample_size)
+    if(ask_features){
+        # Ask for channels for training features  
+        print(as.matrix(colnames(df)))
+        prompt <- "Enter the column INDICES of the training features (separated by 
+                  single space only, no comas allowed) \n"
+        ft_idxs <- as.numeric(strsplit(readline(prompt), " ")[[1]])
     }
+
+    ft_idxs <- colnames(df)[ft_idxs]
+    ft_idxs <- ft_idxs[order(ft_idxs)]
+    df <- df[c(class_col, ft_idxs)]
+
+    # Verifying class_col name
+    class_idx <- grep(class_col, colnames(df))
+    colnames(df)[class_idx] <- 'CANARY'
+    df$CANARY <- as.factor(df$CANARY)
     
     # Training and test sets
+    set.seed(seed+55)
     train_i <- caret::createDataPartition(df$CANARY, p=train_size, list=FALSE)
     df_train <- df[train_i,]
     df_test <- df[-train_i,]
+    message('Partition done!')
+
+    # Balance classes with SMOTE
+    set.seed(seed+20)
+    df_train <- DMwR::SMOTE(CANARY ~ ., data  = df_train)
+    message('SMOTE done!')
 
     # Train model
-    TrainModel(df_train, df_test, alg = alg, class_col = class_col, seed = seed, 
-    label = label, allowParallel = allowParallel, free_cores = free_cores)
+    TrainModel(df_train, df_test, alg = alg, class_col = 'CANARY', seed = seed, 
+    label = label, allowParallel = allowParallel, workers = workers)
 
 
 }
 
 TrainModel <- function(TrainSet, TestSet, alg = c('all', 'RF', 'XGB'), 
     class_col = class_col, seed = 40, label = label, allowParallel = TRUE, 
-    free_cores = 4){
+    workers = 4){
     library(caret)
 
     # Set seed
@@ -44,27 +86,16 @@ TrainModel <- function(TrainSet, TestSet, alg = c('all', 'RF', 'XGB'),
     
     alg <- match.arg(alg, c('all', 'RF', 'XGB'))
 
-    # Ask for channels for training features   
-    print(as.matrix(colnames(TrainSet)))
-    prompt <- "Enter the column INDICES of the training features (separated by 
-              single space only, no comas allowed) \n"
-    features <- as.numeric(strsplit(readline(prompt), " ")[[1]])
-    features <- colnames(TrainSet)[features]
-    features <- features[order(features)]
-
-    TrainSet <- denoisingCTF::t_asinh(TrainSet[c(class_col, features)])
-    TestSet <- denoisingCTF::t_asinh(TestSet[c(class_col, features)])
-
-    colnames(TrainSet) <- c(class_col, features)
-
-    colnames(TestSet) <- colnames(TrainSet)
+    TrainSet <- denoisingCTF::t_asinh(TrainSet)
+    TestSet <- denoisingCTF::t_asinh(TestSet)
+    message('Arcsin transformation done!')
 
 
     if(alg == 'RF' || alg == 'all'){
         print('Running Random Forest')
         # Initiating parallelization
         if(allowParallel){
-        cluster <- parallel::makeCluster(parallel::detectCores() - free_cores) 
+        cluster <- parallel::makeCluster(workers) 
         doParallel::registerDoParallel(cluster)
         }
         # Computing training control parameters
@@ -80,7 +111,7 @@ TrainModel <- function(TrainSet, TestSet, alg = c('all', 'RF', 'XGB'),
             returnData = FALSE)
 
         # Setting tune grid
-        tunegrid <- expand.grid(.mtry=c(1:length(features)))
+        tunegrid <- expand.grid(.mtry=c(1:ncol(TrainSet)-1))
 
         # Fitting the model
         model_rf <- caret::train(TrainSet[,-1], TrainSet[,1],
@@ -88,6 +119,7 @@ TrainModel <- function(TrainSet, TestSet, alg = c('all', 'RF', 'XGB'),
             trControl = fitControl,
             metric = 'ROC',
             tuneGrid=tunegrid)
+        message('Model training done!')
 
         # Assesing feature importance
         ftimp_rf <- caret::varImp(model_rf)
@@ -102,10 +134,12 @@ TrainModel <- function(TrainSet, TestSet, alg = c('all', 'RF', 'XGB'),
             data = pred_rf,
             mode = 'everything')
 
+        message('Testing done!')
+
         #save RData
         save(model_rf, ftimp_rf, pred_rf, conf_rf, TrainSet, TestSet,
             file = paste0(label, '_RFmodel.RData'))
-        print('Random Forest completed')
+        message('Random Forest completed')
         
         # Finalizing parallelization
         if(allowParallel){
@@ -151,7 +185,7 @@ TrainModel <- function(TrainSet, TestSet, alg = c('all', 'RF', 'XGB'),
             tuneGrid = xgbGrid,
             method = "xgbTree",
             metric = 'ROC',
-            nthread = detectCores() - free_cores)
+            nthread = workers)
 
         # Assesing feature importance
         ftimp_xgb <- caret::varImp(model_xgb)

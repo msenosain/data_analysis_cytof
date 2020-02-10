@@ -209,3 +209,79 @@ TrainModel <- function(TrainSet, TestSet, alg = c('all', 'RF', 'XGB'),
     }
 
 }
+
+
+median_by_pt <- function(df, ref,
+                            subset_celltype = F, 
+                            celltype_col = celltype_col, 
+                            celltype_name = celltype_name,
+                            ask_features = T, 
+                            ft_idxs, 
+                            ptID_col = ptID_col,
+                            groups
+                            ){
+
+    # subset a cell type
+    if(subset_celltype){
+        df <- df[df[,celltype_col] %in% celltype_name,]
+    }
+
+    if(ask_features){
+        # Ask for channels for training features  
+        print(as.matrix(colnames(df)))
+        prompt <- "Enter the column INDICES of the training features (separated by 
+                  single space only, no comas allowed) \n"
+        ft_idxs <- as.numeric(strsplit(readline(prompt), " ")[[1]])
+    }
+
+    ft_idxs <- colnames(df)[ft_idxs]
+    df <- denoisingCTF::t_asinh(df[c(ft_idxs, ptID_col)])
+
+    # Aggrgate by median
+    exp_median <- aggregate(df[,1:ncol(df)-1], list(df[,ptID_col]), median)
+
+    colnames(exp_median) <- c(ptID_col, colnames(exp_median)[-1])
+
+    ref2 <- ref[-which(duplicated(ref[,ptID_col])==T),]
+
+    exp_median <- cbind('CANARY'=ref[,'CANARY'][match(exp_median[,ptID_col], ref[,ptID_col])], exp_median)
+
+    k <- which(exp_median$CANARY %in% groups)
+    exp_median <- exp_median[k,]
+    
+    coff <- asinh(10/5)
+    col_idx = c()
+
+    for(i in 3:ncol(exp_median)){
+        x <- length(which((exp_median[,i] > coff) ==T))
+        if(x == 0){col_idx = c(col_idx, i)}
+    }
+
+    exp_median <- exp_median[,-col_idx]
+
+    # include only the significant ones
+
+    ig1 <- which(exp_median$CANARY == groups[1])
+    ig2 <- which(exp_median$CANARY == groups[2])
+
+    pv <- c()
+    for(i in 3:ncol(exp_median)){
+        pv <- c(pv, wilcox.test(exp_median[ig1,i], exp_median[ig2,i])$p.value)
+    }
+
+    pvals <- data.frame('Protein' = colnames(exp_median)[3:ncol(exp_median)], 'p.value' = pv)
+    corrected_pvals <- p.adjust(pvals$p.value, method = 'BH')
+    pvals['FDR_corrected'] <- corrected_pvals
+
+    pv_method <- "Wilcoxon rank sum test"
+    correction_method <- "Benjamini & Hochberg / FDR"
+
+    DE_results <- list('Med_expression'=exp_median,'pvals'=pvals, 
+        'pv_method'=pv_method, 'correction_method' = correction_method)
+
+
+    return(DE_results)
+}
+
+
+

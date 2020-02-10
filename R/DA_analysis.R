@@ -42,10 +42,14 @@ DA_analysis <- function(df, ref, class_col, group_levels, group_col,
     }
 
     pvals <- data.frame('cell_type' = colnames(RA_clrt), 'p.value' = pv)
+    corrected_pvals <- p.adjust(pvals$p.value, method = 'BH')
+    pvals['FDR_corrected'] <- corrected_pvals
+
     pv_method <- "Wilcoxon rank sum test"
+    correction_method <- "Benjamini & Hochberg / FDR"
 
     DA_results <- list('RA_raw'=RA_raw, 'RA_clrt'=RA_clrt, 'ref_t'=ref_t, 
-        'pvals'=pvals, 'pv_method'=pv_method)
+        'pvals'=pvals, 'pv_method'=pv_method, 'correction_method' = correction_method)
 
     return(DA_results)
 }

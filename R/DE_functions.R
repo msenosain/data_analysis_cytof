@@ -260,7 +260,10 @@ median_by_pt <- function(df, ref,
         if(x == 0){col_idx = c(col_idx, i)}
     }
 
-    exp_median <- exp_median[,-col_idx]
+    if(length(col_idx)>0){
+        exp_median <- exp_median[,-col_idx]
+    }
+    
 
     if(compare_groups){
         ig1 <- which(exp_median$CANARY == groups[1])

@@ -237,15 +237,22 @@ findElbow <- function(data, max){
 
 
 DetermineNumberOfClusters <- function(data,k_max,plot=FALSE,smooth=0.2,
-                                      iter.max=50, seed = 101, ...){
+                                      iter.max=50, seed = 101, ask_ft = T,
+                                      arcsn_tr = T,
+                                      ...){
 
   # Subseting data for clustering and transforming data
-  print(as.matrix(colnames(data)))
-  prompt <- "Enter the column INDICES of the training features (separated by single space only, no comas allowed) \n"
-  features <- as.numeric(strsplit(readline(prompt), " ")[[1]])
-  features <- colnames(data)[features]
-  data <- denoisingCTF::t_asinh(data[features])
+  if(ask_ft){
+      print(as.matrix(colnames(data)))
+      prompt <- "Enter the column INDICES of the training features (separated by single space only, no comas allowed) \n"
+      features <- as.numeric(strsplit(readline(prompt), " ")[[1]])
+      features <- colnames(data)[features]
+      data <- data[features]
+  } 
 
+  if(arcsn_tr){
+    data <- denoisingCTF::t_asinh(data)
+  }
   # Clustering
   set.seed(seed)
 

@@ -197,7 +197,7 @@ ClassAbundanceByPt <- function(data, ptID_col = 'pt_ID', class_col = 'cell_type'
 
     for(i in ptids){
         k <- subset(data, pt_ID==i)
-        k <-table(k[,class_col])/nrow(k)*100
+        k <-table(k[,class_col])/nrow(k)#*100
         prcnt <- rbind(prcnt,k)
     }
 

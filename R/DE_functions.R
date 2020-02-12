@@ -218,7 +218,8 @@ median_by_pt <- function(df, ref,
                             ft_idxs, 
                             ptID_col = ptID_col,
                             compare_groups = T,
-                            groups
+                            groups,
+                            asinh_t = T
                             ){
 
     # subset a cell type
@@ -235,7 +236,11 @@ median_by_pt <- function(df, ref,
     }
 
     ft_idxs <- colnames(df)[ft_idxs]
-    df <- denoisingCTF::t_asinh(df[c(ft_idxs, ptID_col)])
+    df <- df[c(ft_idxs, ptID_col)]
+
+    if(asinh_t){
+        df <- denoisingCTF::t_asinh(df)
+    }
 
     # Aggrgate by median
     exp_median <- aggregate(df[,1:ncol(df)-1], list(df[,ptID_col]), median)

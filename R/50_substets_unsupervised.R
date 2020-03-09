@@ -3,15 +3,6 @@ load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/cellsubtypes.RData
 source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/20_ClustAnnot_functions.R")
 source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/40_DE_functions.R")
 
-# Get percentage
-# ctb <- ClassAbundanceByPt(annot_df, ptID_col = 'pt_ID', class_col = 'cell_type_B')
-# stb2 <- ClassAbundanceByPt(annot_df, ptID_col = 'pt_ID', class_col = 'subtype_B2')
-# stb <- ClassAbundanceByPt(annot_df, ptID_col = 'pt_ID', class_col = 'subtype_B')
-
-# prcnt_pt <- cbind(Endothelial = ctb$Endothelial, Fib_Mesenchymal = ctb$Fib_Mesenchymal,
-#     T_cells = stb2$T_cells, Tc_cells = stb$Tc_cells, Th_cells = stb$Th_cells, 
-#     Myeloid = stb$Myeloid, NK_cells = stb$NK_cells, stb[,grep('Epithelial', colnames(stb))])
-
 
 # get expression
 
@@ -111,7 +102,7 @@ raw_exp <- raw_exp[,-sort(k)[3:length(k)]]
 raw_exp[is.na(raw_exp)] <- 0
 
 
-
+save(raw_exp, file= 'subset_exprmat.RData')
 
 
 #############################################################################################################

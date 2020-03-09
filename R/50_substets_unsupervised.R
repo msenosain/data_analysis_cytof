@@ -94,15 +94,15 @@ med_epi <- match_all(med_epi, med_all)
 
 
 # Merging all
-raw_exp <- do.call('cbind', 
+sbst_exp <- do.call('cbind', 
     list(med_endo, med_fibmes, med_tcells, med_CD8T, med_CD4T, med_mye, med_NK, med_epi))
 
-k <- c(grep('CANARY', colnames(raw_exp)), grep('pt_ID', colnames(raw_exp)))
-raw_exp <- raw_exp[,-sort(k)[3:length(k)]]
-raw_exp[is.na(raw_exp)] <- 0
+k <- c(grep('CANARY', colnames(sbst_exp)), grep('pt_ID', colnames(sbst_exp)))
+sbst_exp <- sbst_exp[,-sort(k)[3:length(k)]]
+sbst_exp[is.na(sbst_exp)] <- 0
 
 
-save(raw_exp, file= 'subset_exprmat.RData')
+save(sbst_exp, file= 'subset_exprmat.RData')
 
 
 #############################################################################################################
@@ -129,20 +129,22 @@ CDE_TMA36 <- read_excel("~/Documents/Massion_lab/CDE/CDE_TMA36_2020FEB25_SA.xlsx
         "text", "date", "text", "text", "date", 
         "text"))
 
-x <- match(raw_exp$pt_ID, CDE_TMA36$Patient_ID)
+x <- match(sbst_exp$pt_ID, CDE_TMA36$Patient_ID)
 pData_cytof <- CDE_TMA36[x,]
 colnames(pData_cytof)[2] <- 'pt_ID'
+pData_cytof[9,3] <- 'N'
+pData_cytof$Family_History_Cancer_Type[9] <- 'Unknown'
 
 # Option 1: RData object with 2 data_frames
-save(raw_exp, pData_cytof, file= 'subset_exprmat_clinical_annotations.RData')
+save(sbst_exp, pData_cytof, file= 'subset_exprmat_clinical_annotations.RData')
 
 
 #2 Option 2: ExpressionSet Object containing assay data and clinical annotations
 rownames(pData_cytof) <- paste0(rep('smp'), '_', 1:nrow(pData_cytof))
-raw_exp$CANARY <- NULL
-raw_exp$pt_ID <- NULL
-rownames(raw_exp) <- paste0(rep('smp'), '_', 1:nrow(raw_exp))
-aData_cytof <- t(raw_exp)
+sbst_exp$CANARY <- NULL
+sbst_exp$pt_ID <- NULL
+rownames(sbst_exp) <- paste0(rep('smp'), '_', 1:nrow(sbst_exp))
+aData_cytof <- t(sbst_exp)
 
 library(Biobase)
 
@@ -152,40 +154,80 @@ save(eSet_cytof, file= 'eSet_cytof.RData')
 
 #############################################################################################################
 
+# Unsupervised analysis of patients proteocmic profile
 
-excl_i <- grep("*EpCAM*|*Cytokeratin*|*CK7*|*CD31*|*CD45*|*CD56*|*CD8*|*CD3*|*CD11b*|*CD90*|*CD4*|*Vimentin|*TP63*", colnames(raw_exp))
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/subsets/subset_exprmat_clinical_annotations.RData")
 
-raw_exp <- raw_exp[,-excl_i]
+excl_i <- grep("*EpCAM*|*Cytokeratin*|*CK7*|*CD31*|*CD45*|*CD56*|*CD8*|*CD3*|*CD11b*|*CD90*|*CD4*|*Vimentin|*TP63*", colnames(sbst_exp))
+
+sbst_exp <- sbst_exp[,-excl_i]
 
 set.seed(53)
 
-DetermineNumberOfClusters(raw_exp[,3:ncol(raw_exp)], k_max = 20, plot = T,
+DetermineNumberOfClusters(sbst_exp[,3:ncol(sbst_exp)], k_max = 20, plot = T,
     ask_ft = F, arcsn_tr = F) #4
-
-cl_4 <- kmeans(raw_exp[,3:ncol(raw_exp)], centers=4, iter.max = 100)$cluster
-
-tsne_smp <- Rtsne::Rtsne(raw_exp[,3:ncol(raw_exp)], 
-    check_duplicates = FALSE, perplexity =20, pca_scale = F)
-
-pca_smp <- prcomp(raw_exp[,3:ncol(raw_exp)], center = TRUE,scale. = TRUE)
-
-plot(tsne_smp$Y[,1], tsne_smp$Y[,2], col=cl_4, pch=19)
-plot(pca_smp$x[,1], pca_smp$x[,2], col=cl_4, pch=19)
 
 
 library(ComplexHeatmap)
-data <- as.matrix(raw_exp[,3:ncol(raw_exp)])
+library(RColorBrewer)
+
+data <- as.matrix(sbst_exp[,3:ncol(sbst_exp)])
 scale_max = max(data)
 heat_palette_med <- c("Darkblue", "white", "red")
 pairs.breaks_med <- c(0,1.5,scale_max)
+
+library(circlize)
+
+ha = rowAnnotation(
+    foo = runif(71), 
+    bar = sample(letters[1:3], 71, replace = TRUE),
+    col = list(foo = col_fun,
+               bar = c("a" = "red", "b" = "green", "c" = "blue")
+    ),
+    #gp = gpar(col = "black"),
+    simple_anno_size = unit(0.5, "cm")
+)
+
+
+    canary = as.factor(pData_cytof$CANARY), 
+    gender = as.factor(pData_cytof$Gender),
+    smoking = as.factor(pData_cytof$Smoking_Status),
+    stage = as.factor(pData_cytof$`8th_edition_path_stage`),
+    age = pData_cytof$Age_at_collection,
+    life_status = as.factor(pData_cytof$Living_Status),
+    BMI = pData_cytof$BMI,
+    family_cancer = as.factor(pData_cytof$Family_History_Cancer_Type),
+    prior_cancer = as.factor(pData_cytof$Prior_Cancer)
+    prior_cancer = as.factor(pData_cytof$Prior_Cancer_Type)
+    fev1 = as.numeric(pData_cytof$`FEV1 (% Pred)`)
+
+
+
+ha = rowAnnotation(
+    #fev1 = as.numeric(pData_cytof$`FEV1 (% Pred)`),
+    smoking = as.factor(pData_cytof$Smoking_Status),
+    stage = as.factor(pData_cytof$`8th_edition_path_stage`),
+    life_status = as.factor(pData_cytof$Living_Status),
+    simple_anno_size = unit(0.5, "cm")
+)
+
 Heatmap(data, name = "mat", row_km = 4, column_km = 5,
     col = circlize::colorRamp2(pairs.breaks_med, heat_palette_med),
-  heatmap_legend_param = list(color_bar = "continuous"))
+  heatmap_legend_param = list(color_bar = "continuous"), right_annotation = ha)
 
 
 
 
 
 
-    
 
+
+cl_4 <- kmeans(sbst_exp[,3:ncol(sbst_exp)], centers=4, iter.max = 100)$cluster
+
+tsne_smp <- Rtsne::Rtsne(sbst_exp[,3:ncol(sbst_exp)], 
+    check_duplicates = FALSE, perplexity =20, pca_scale = F)
+
+pca_smp <- prcomp(sbst_exp[,3:ncol(sbst_exp)], center = TRUE,scale. = TRUE)
+
+plot(tsne_smp$Y[,1], tsne_smp$Y[,2], col=cl_4, pch=19)
+plot(pca_smp$x[,1], pca_smp$x[,2], col=cl_4, pch=19)

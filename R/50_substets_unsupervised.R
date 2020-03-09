@@ -106,7 +106,53 @@ save(raw_exp, file= 'subset_exprmat.RData')
 
 
 #############################################################################################################
+# Integration of Clinical data
+
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/subsets/subset_exprmat.RData")
+
+library(readxl)
+CDE_TMA36 <- read_excel("~/Documents/Massion_lab/CDE/CDE_TMA36_2020FEB25_SA.xlsx", 
+    sheet = "ADC_mafe_processed", col_types = c("date", 
+        "text", "text", "date", "text", "text", 
+        "numeric", "numeric", "text", "text", 
+        "text", "numeric", "text", "numeric", 
+        "numeric", "numeric", "text", "text", 
+        "text", "text", "date", "numeric", 
+        "text", "text", "text", "text", "date", 
+        "text", "date", "text", "text", "date", 
+        "text", "text", "text", "text", "text", 
+        "text", "numeric", "text", "text", 
+        "text", "date", "text", "date", "text", 
+        "date", "text", "date", "date", "text", 
+        "text", "text", "date", "text", "text", 
+        "text", "text", "date", "text", "text", 
+        "text", "date", "text", "text", "date", 
+        "text"))
+
+x <- match(raw_exp$pt_ID, CDE_TMA36$Patient_ID)
+pData_cytof <- CDE_TMA36[x,]
+colnames(pData_cytof)[2] <- 'pt_ID'
+
+# Option 1: RData object with 2 data_frames
+save(raw_exp, pData_cytof, file= 'subset_exprmat_clinical_annotations.RData')
+
+
+#2 Option 2: ExpressionSet Object containing assay data and clinical annotations
+rownames(pData_cytof) <- paste0(rep('smp'), '_', 1:nrow(pData_cytof))
+raw_exp$CANARY <- NULL
+raw_exp$pt_ID <- NULL
+rownames(raw_exp) <- paste0(rep('smp'), '_', 1:nrow(raw_exp))
+aData_cytof <- t(raw_exp)
+
+library(Biobase)
+
+eSet_cytof <- ExpressionSet(assayData = aData_cytof, phenoData = AnnotatedDataFrame(pData_cytof))
+
+save(eSet_cytof, file= 'eSet_cytof.RData')
+
 #############################################################################################################
+
+
 excl_i <- grep("*EpCAM*|*Cytokeratin*|*CK7*|*CD31*|*CD45*|*CD56*|*CD8*|*CD3*|*CD11b*|*CD90*|*CD4*|*Vimentin|*TP63*", colnames(raw_exp))
 
 raw_exp <- raw_exp[,-excl_i]

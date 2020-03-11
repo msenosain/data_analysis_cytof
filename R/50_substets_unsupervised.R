@@ -182,7 +182,6 @@ pData_cytof[c(k1,k2,k3),'DRP_st'] <- 'Yes'
 k <- which(pData_cytof$Prior_Cancer == 'NA')
 pData_cytof[k,'Prior_Cancer'] <- 'No'
 
-set.seed(53)
 
 library(ComplexHeatmap)
 library(RColorBrewer)
@@ -251,22 +250,6 @@ Heatmap(data, name = "mat", row_km = 4, column_km = 5,
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 DetermineNumberOfClusters(sbst_exp[,3:ncol(sbst_exp)], k_max = 20, plot = T,
     ask_ft = F, arcsn_tr = F) #4
 
@@ -280,3 +263,132 @@ pca_smp <- prcomp(sbst_exp[,3:ncol(sbst_exp)], center = TRUE,scale. = TRUE)
 
 plot(tsne_smp$Y[,1], tsne_smp$Y[,2], col=cl_4, pch=19)
 plot(pca_smp$x[,1], pca_smp$x[,2], col=cl_4, pch=19)
+
+
+###########################################################################################################
+
+
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/cellsubtypes.RData")
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/subsets/subset_exprmat_clinical_annotations.RData")
+
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/20_ClustAnnot_functions.R")
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/40_DE_functions.R")
+
+
+pData_cytof['Death_st'] <- 'No'
+k1 <- which(is.na(pData_cytof$Death_Date)==FALSE)
+pData_cytof[k1,'Death_st'] <- 'Yes'
+
+pData_cytof['Recurrence_st'] <- 'No'
+k2 <- which(is.na(pData_cytof$Recurrence_Date)==FALSE)
+pData_cytof[k2,'Recurrence_st'] <- 'Yes'
+
+pData_cytof['Progression_st'] <- 'No'
+k3 <- which(is.na(pData_cytof$Progression_Date)==FALSE)
+pData_cytof[k3,'Progression_st'] <- 'Yes'
+
+pData_cytof['DRP_st'] <- 'No'
+pData_cytof[c(k1,k2,k3),'DRP_st'] <- 'Yes'
+
+k <- which(pData_cytof$Prior_Cancer == 'NA')
+pData_cytof[k,'Prior_Cancer'] <- 'No'
+
+
+# Get percentage
+k <- which(annot_df$cell_type_B == 'Epithelial')
+stroma <- annot_df[-k,]
+ctb <- ClassAbundanceByPt(stroma, ptID_col = 'pt_ID', class_col = 'cell_type_B')
+stb2 <- ClassAbundanceByPt(stroma, ptID_col = 'pt_ID', class_col = 'subtype_B2')
+stb <- ClassAbundanceByPt(stroma, ptID_col = 'pt_ID', class_col = 'subtype_B')
+
+prcnt_pt_stroma <- as.data.frame(cbind(Endothelial = ctb$Endothelial, Fib_Mesenchymal = ctb$Fib_Mesenchymal,
+ T_cells = stb2$T_cells, Myeloid = stb$Myeloid, NK_cells = stb$NK_cells, Other_imm = stb$Other_immune))
+
+prcnt_pt_stroma2 <- as.data.frame(cbind(Endothelial = ctb$Endothelial, Fib_Mesenchymal = ctb$Fib_Mesenchymal,
+ Tc_cells = stb$Tc_cells, Th_cells = stb$Th_cells, Myeloid = stb$Myeloid, 
+ NK_cells = stb$NK_cells))
+#rownames(ctb) ==rownames(stb)
+
+rownames(prcnt_pt_stroma) = rownames(ctb)
+rownames(prcnt_pt_stroma2) = rownames(ctb)
+
+
+epi <- annot_df[k,]
+stb_e <- ClassAbundanceByPt(epi, ptID_col = 'pt_ID', class_col = 'subtype_B')
+prcnt_pt_epi <- cbind(stb_e[,grep('Epithelial', colnames(stb_e))])
+
+
+x <- match(rownames(prcnt_pt_stroma), pData_cytof$pt_ID)
+pData_cytof <- pData_cytof[x,]
+
+save(pData_cytof, prcnt_pt_epi, prcnt_pt_stroma, prcnt_pt_stroma2, ctb, 
+    stb2, stb, stb_e, file = 'prcnts_by_pt.RData')
+
+
+library(ComplexHeatmap)
+library(RColorBrewer)
+library(circlize)
+
+data <- scale(as.matrix(prcnt_pt_stroma))
+scale_max = max(data)
+heat_palette_med <- c("Darkblue", "white", "red")
+pairs.breaks_med <- c(min(data),0,scale_max)
+
+
+
+ha = rowAnnotation(
+
+    life_status = as.factor(pData_cytof$Living_Status),
+    Death_st = as.factor(pData_cytof$Death_st),
+    Recurrence_st = as.factor(pData_cytof$Recurrence_st),
+    Progression_st = as.factor(pData_cytof$Progression_st),
+    DRP_st = as.factor(pData_cytof$DRP_st),
+
+    simple_anno_size = unit(0.5, "cm")
+)
+set.seed(45)
+Heatmap(data, name = "mat",
+    col = circlize::colorRamp2(pairs.breaks_med, heat_palette_med),
+  heatmap_legend_param = list(color_bar = "continuous"), right_annotation = ha)
+
+
+
+    canary = as.factor(pData_cytof$CANARY),
+    age = pData_cytof$Age_at_collection,
+    gender = as.factor(pData_cytof$Gender),
+    race = as.factor(pData_cytof$Race),
+
+    ethnicity = as.factor(pData_cytof$Ethnicity),
+    BMI = pData_cytof$BMI,
+    smoking = as.factor(pData_cytof$Smoking_Status),
+    Pack_Years = pData_cytof$Pack_Years,
+    
+    Age_Started = pData_cytof$Age_Started,
+    Age_Quit = pData_cytof$Age_Quit,
+    Exposure = as.factor(pData_cytof$Exposure),
+    prior_cancer = as.factor(pData_cytof$Prior_Cancer),
+    
+    prior_cancer_type = as.factor(pData_cytof$Prior_Cancer_Type),
+    family_cancer = as.factor(pData_cytof$Family_History_Cancer_Type),
+    Chest_CT_Size = pData_cytof$Chest_CT_Size,
+    Chest_CT_Location = as.factor(pData_cytof$Chest_CT_Location),
+    
+    Chest_CT_Nodule_Density = as.factor(pData_cytof$Chest_CT_Nodule_Density),
+    CT_Nodule_Margination = as.factor(pData_cytof$CT_Nodule_Margination),
+    PET_Lesion = as.factor(pData_cytof$PET_Lesion),
+    fev1 = as.numeric(pData_cytof$`FEV1 (% Pred)`),
+    
+    Clinical_Staging = as.factor(pData_cytof$Clinical_Staging),
+    Original_Path_Staging = as.factor(pData_cytof$Original_Path_Staging),
+    eighth_ed_stage = as.factor(pData_cytof$`8th_edition_path_stage`),
+    Path_Nodule_Size_cm = pData_cytof$Path_Nodule_Size_cm,
+    
+    life_status = as.factor(pData_cytof$Living_Status),
+    Death_st = as.factor(pData_cytof$Death_st),
+    Recurrence_st = as.factor(pData_cytof$Recurrence_st),
+    Progression_st = as.factor(pData_cytof$Progression_st),
+    DRP_st = as.factor(pData_cytof$DRP_st),
+
+
+
+

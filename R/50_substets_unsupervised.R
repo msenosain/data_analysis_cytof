@@ -111,7 +111,7 @@ save(sbst_exp, file= 'subset_exprmat.RData')
 load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/subsets/subset_exprmat.RData")
 
 library(readxl)
-CDE_TMA36 <- read_excel("~/Documents/Massion_lab/CDE/CDE_TMA36_2020FEB25_SA.xlsx", 
+CDE_TMA36 <- read_excel("~/Library/Mobile Documents/com~apple~CloudDocs/Documents/Vanderbilt/Massion_Lab/Projects/CyTOF_ADC_project/Datasets_info/CDEs/CDE_TMA36_2020FEB25_SA.xlsx", 
     sheet = "ADC_mafe_processed", col_types = c("date", 
         "text", "text", "date", "text", "text", 
         "numeric", "numeric", "text", "text", 
@@ -129,11 +129,26 @@ CDE_TMA36 <- read_excel("~/Documents/Massion_lab/CDE/CDE_TMA36_2020FEB25_SA.xlsx
         "text", "date", "text", "text", "date", 
         "text"))
 
-x <- match(sbst_exp$pt_ID, CDE_TMA36$Patient_ID)
+x <- match(sbst_exp$pt_ID, CDE_TMA36$Patient_ID) # Select only pts with CyTOF data
 pData_cytof <- CDE_TMA36[x,]
 colnames(pData_cytof)[2] <- 'pt_ID'
 pData_cytof[9,3] <- 'N'
 pData_cytof$Family_History_Cancer_Type[9] <- 'Unknown'
+
+pData_cytof['Death_st'] <- 'No'
+k1 <- which(is.na(pData_cytof$Death_Date)==FALSE)
+pData_cytof[k1,'Death_st'] <- 'Yes'
+
+pData_cytof['Recurrence_st'] <- 'No'
+k2 <- which(is.na(pData_cytof$Recurrence_Date)==FALSE)
+pData_cytof[k2,'Recurrence_st'] <- 'Yes'
+
+pData_cytof['Progression_st'] <- 'No'
+k3 <- which(is.na(pData_cytof$Progression_Date)==FALSE)
+pData_cytof[k3,'Progression_st'] <- 'Yes'
+
+pData_cytof['DRP_st'] <- 'No'
+pData_cytof[c(k1,k2,k3),'DRP_st'] <- 'Yes'
 
 # Option 1: RData object with 2 data_frames
 save(sbst_exp, pData_cytof, file= 'subset_exprmat_clinical_annotations.RData')
@@ -164,23 +179,6 @@ excl_i <- grep("*EpCAM*|*Cytokeratin*|*CK7*|*CD31*|*CD45*|*CD56*|*CD8*|*CD3*|*CD
 
 sbst_exp <- sbst_exp[,-excl_i]
 
-pData_cytof['Death_st'] <- 'No'
-k1 <- which(is.na(pData_cytof$Death_Date)==FALSE)
-pData_cytof[k1,'Death_st'] <- 'Yes'
-
-pData_cytof['Recurrence_st'] <- 'No'
-k2 <- which(is.na(pData_cytof$Recurrence_Date)==FALSE)
-pData_cytof[k2,'Recurrence_st'] <- 'Yes'
-
-pData_cytof['Progression_st'] <- 'No'
-k3 <- which(is.na(pData_cytof$Progression_Date)==FALSE)
-pData_cytof[k3,'Progression_st'] <- 'Yes'
-
-pData_cytof['DRP_st'] <- 'No'
-pData_cytof[c(k1,k2,k3),'DRP_st'] <- 'Yes'
-
-k <- which(pData_cytof$Prior_Cancer == 'NA')
-pData_cytof[k,'Prior_Cancer'] <- 'No'
 
 
 library(ComplexHeatmap)
@@ -274,24 +272,6 @@ load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/subsets/s
 source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/20_ClustAnnot_functions.R")
 source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/40_DE_functions.R")
 
-
-pData_cytof['Death_st'] <- 'No'
-k1 <- which(is.na(pData_cytof$Death_Date)==FALSE)
-pData_cytof[k1,'Death_st'] <- 'Yes'
-
-pData_cytof['Recurrence_st'] <- 'No'
-k2 <- which(is.na(pData_cytof$Recurrence_Date)==FALSE)
-pData_cytof[k2,'Recurrence_st'] <- 'Yes'
-
-pData_cytof['Progression_st'] <- 'No'
-k3 <- which(is.na(pData_cytof$Progression_Date)==FALSE)
-pData_cytof[k3,'Progression_st'] <- 'Yes'
-
-pData_cytof['DRP_st'] <- 'No'
-pData_cytof[c(k1,k2,k3),'DRP_st'] <- 'Yes'
-
-k <- which(pData_cytof$Prior_Cancer == 'NA')
-pData_cytof[k,'Prior_Cancer'] <- 'No'
 
 
 # Get percentage

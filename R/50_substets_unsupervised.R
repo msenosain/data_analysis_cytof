@@ -121,7 +121,7 @@ CDE_TMA36 <- read_excel("~/Library/Mobile Documents/com~apple~CloudDocs/Document
         "text", "text", "text", "text", "date", 
         "text", "date", "text", "text", "date", 
         "text", "text", "text", "text", "text", 
-        "text", "numeric", "text", "text", 
+        "text", "numeric", "text", "text", "text",
         "text", "date", "text", "date", "text", 
         "date", "text", "date", "date", "text", 
         "text", "text", "date", "text", "text", 
@@ -132,8 +132,8 @@ CDE_TMA36 <- read_excel("~/Library/Mobile Documents/com~apple~CloudDocs/Document
 x <- match(sbst_exp$pt_ID, CDE_TMA36$Patient_ID) # Select only pts with CyTOF data
 pData_cytof <- CDE_TMA36[x,]
 colnames(pData_cytof)[2] <- 'pt_ID'
-pData_cytof[9,3] <- 'N'
-pData_cytof$Family_History_Cancer_Type[9] <- 'Unknown'
+# pData_cytof[9,3] <- 'N'
+# pData_cytof$Family_History_Cancer_Type[9] <- 'Unknown'
 
 pData_cytof['Death_st'] <- 'No'
 k1 <- which(is.na(pData_cytof$Death_Date)==FALSE)
@@ -183,17 +183,16 @@ sbst_exp <- sbst_exp[,-excl_i]
 
 library(ComplexHeatmap)
 library(RColorBrewer)
+library(circlize)
 
 data <- as.matrix(sbst_exp[,3:ncol(sbst_exp)])
 scale_max = max(data)
 heat_palette_med <- c("Darkblue", "white", "red")
 pairs.breaks_med <- c(0,1.5,scale_max)
 
-library(circlize)
 
 ha = rowAnnotation(
 
-    life_status = as.factor(pData_cytof$Living_Status),
     Death_st = as.factor(pData_cytof$Death_st),
     Recurrence_st = as.factor(pData_cytof$Recurrence_st),
     Progression_st = as.factor(pData_cytof$Progression_st),
@@ -208,7 +207,7 @@ Heatmap(data, name = "mat", row_km = 4, column_km = 5,
 
 
 
-    canary = as.factor(pData_cytof$CANARY),
+    canary = as.factor(pData_cytof$CANARY), #
     age = pData_cytof$Age_at_collection,
     gender = as.factor(pData_cytof$Gender),
     race = as.factor(pData_cytof$Race),
@@ -228,17 +227,16 @@ Heatmap(data, name = "mat", row_km = 4, column_km = 5,
     Chest_CT_Size = pData_cytof$Chest_CT_Size,
     Chest_CT_Location = as.factor(pData_cytof$Chest_CT_Location),
     
-    Chest_CT_Nodule_Density = as.factor(pData_cytof$Chest_CT_Nodule_Density),
+    Chest_CT_Nodule_Density = as.factor(pData_cytof$Chest_CT_Nodule_Density), #
     CT_Nodule_Margination = as.factor(pData_cytof$CT_Nodule_Margination),
     PET_Lesion = as.factor(pData_cytof$PET_Lesion),
-    fev1 = as.numeric(pData_cytof$`FEV1 (% Pred)`),
+    fev1 = as.numeric(pData_cytof$`FEV1%pred`),
     
-    Clinical_Staging = as.factor(pData_cytof$Clinical_Staging),
-    Original_Path_Staging = as.factor(pData_cytof$Original_Path_Staging),
-    eighth_ed_stage = as.factor(pData_cytof$`8th_edition_path_stage`),
+    eighth_ed_stage = as.factor(pData_cytof$`8th_ed_path_stage`),
+    simplified_stage = as.factor(pData_cytof$Stages_simplified),
     Path_Nodule_Size_cm = pData_cytof$Path_Nodule_Size_cm,
-    
     life_status = as.factor(pData_cytof$Living_Status),
+    
     Death_st = as.factor(pData_cytof$Death_st),
     Recurrence_st = as.factor(pData_cytof$Recurrence_st),
     Progression_st = as.factor(pData_cytof$Progression_st),
@@ -265,6 +263,7 @@ plot(pca_smp$x[,1], pca_smp$x[,2], col=cl_4, pch=19)
 
 ###########################################################################################################
 
+# Obtain percentages of cell types by patient
 
 load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/cellsubtypes.RData")
 load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/subsets/subset_exprmat_clinical_annotations.RData")
@@ -305,11 +304,16 @@ save(pData_cytof, prcnt_pt_epi, prcnt_pt_stroma, prcnt_pt_stroma2, ctb,
     stb2, stb, stb_e, file = 'prcnts_by_pt.RData')
 
 
+###########################################################################################################
+# Unsupervised analysis of cell type relative abundance among patients
+
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/subsets/prcnts_by_pt.RData")
+
 library(ComplexHeatmap)
 library(RColorBrewer)
 library(circlize)
 
-data <- scale(as.matrix(prcnt_pt_stroma))
+data <- scale(as.matrix(prcnt_pt_stroma2)) #prcnt_pt_stroma2
 scale_max = max(data)
 heat_palette_med <- c("Darkblue", "white", "red")
 pairs.breaks_med <- c(min(data),0,scale_max)
@@ -318,22 +322,21 @@ pairs.breaks_med <- c(min(data),0,scale_max)
 
 ha = rowAnnotation(
 
-    life_status = as.factor(pData_cytof$Living_Status),
-    Death_st = as.factor(pData_cytof$Death_st),
-    Recurrence_st = as.factor(pData_cytof$Recurrence_st),
-    Progression_st = as.factor(pData_cytof$Progression_st),
-    DRP_st = as.factor(pData_cytof$DRP_st),
+    Chest_CT_Nodule_Density = as.factor(pData_cytof$Chest_CT_Nodule_Density), #
+    CT_Nodule_Margination = as.factor(pData_cytof$CT_Nodule_Margination),
+    PET_Lesion = as.factor(pData_cytof$PET_Lesion),
+    fev1 = as.numeric(pData_cytof$`FEV1%pred`),
 
     simple_anno_size = unit(0.5, "cm")
 )
 set.seed(45)
-Heatmap(data, name = "mat",
+Heatmap(data, name = "mat", row_km = 4,
     col = circlize::colorRamp2(pairs.breaks_med, heat_palette_med),
   heatmap_legend_param = list(color_bar = "continuous"), right_annotation = ha)
 
 
 
-    canary = as.factor(pData_cytof$CANARY),
+    canary = as.factor(pData_cytof$CANARY), #
     age = pData_cytof$Age_at_collection,
     gender = as.factor(pData_cytof$Gender),
     race = as.factor(pData_cytof$Race),
@@ -348,26 +351,26 @@ Heatmap(data, name = "mat",
     Exposure = as.factor(pData_cytof$Exposure),
     prior_cancer = as.factor(pData_cytof$Prior_Cancer),
     
-    prior_cancer_type = as.factor(pData_cytof$Prior_Cancer_Type),
+    prior_cancer_type = as.factor(pData_cytof$Prior_Cancer_Type), #*
     family_cancer = as.factor(pData_cytof$Family_History_Cancer_Type),
     Chest_CT_Size = pData_cytof$Chest_CT_Size,
     Chest_CT_Location = as.factor(pData_cytof$Chest_CT_Location),
     
-    Chest_CT_Nodule_Density = as.factor(pData_cytof$Chest_CT_Nodule_Density),
+    Chest_CT_Nodule_Density = as.factor(pData_cytof$Chest_CT_Nodule_Density), #
     CT_Nodule_Margination = as.factor(pData_cytof$CT_Nodule_Margination),
     PET_Lesion = as.factor(pData_cytof$PET_Lesion),
-    fev1 = as.numeric(pData_cytof$`FEV1 (% Pred)`),
+    fev1 = as.numeric(pData_cytof$`FEV1%pred`),
     
-    Clinical_Staging = as.factor(pData_cytof$Clinical_Staging),
-    Original_Path_Staging = as.factor(pData_cytof$Original_Path_Staging),
-    eighth_ed_stage = as.factor(pData_cytof$`8th_edition_path_stage`),
+    eighth_ed_stage = as.factor(pData_cytof$`8th_ed_path_stage`),
+    simplified_stage = as.factor(pData_cytof$Stages_simplified),
     Path_Nodule_Size_cm = pData_cytof$Path_Nodule_Size_cm,
-    
     life_status = as.factor(pData_cytof$Living_Status),
+    
     Death_st = as.factor(pData_cytof$Death_st),
     Recurrence_st = as.factor(pData_cytof$Recurrence_st),
     Progression_st = as.factor(pData_cytof$Progression_st),
     DRP_st = as.factor(pData_cytof$DRP_st),
+
 
 
 

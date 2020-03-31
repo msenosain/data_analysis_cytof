@@ -69,22 +69,6 @@ colnames(med_NK)[3:ncol(med_NK)] <- paste0('NK_',colnames(med_NK)[3:ncol(med_NK)
 med_NK <- match_all(med_NK, med_all)
 
 
-# Epithelial By subset
-med_epi <- list()
-# med_epi_w <- list()
-e <- length(grep('Epithelial', unique(annot_df$subtype_B)))
-for (i in 1:e){
-    med_epi[[i]] <- median_by_pt(annot_df, ref, subset_celltype=T, celltype_col='subtype_B',
-    celltype_name=paste0('Epithelial_', i), ask_features=F, ft_idxs = c(15, 17:31, 33:35, 37:48, 50, 51), 
-    ptID_col = 'pt_ID', compare_groups = F)
-    med_epi[[i]] <- match_all(med_epi[[i]], med_all)
-}
-names(med_epi) <- paste0('Epi_', rep(1:e))
-x <- do.call("cbind", med_epi)
-k <- c(grep('CANARY', colnames(x)), grep('pt_ID', colnames(x)))
-med_epi <- x[,-sort(k)[3:length(k)]]
-
-
 # Epithelial as one
 med_epi <- median_by_pt(annot_df, ref, subset_celltype=T, celltype_col='cell_type_B',
     celltype_name='Epithelial', ask_features=F, ft_idxs = c(15, 17:31, 33:35, 37:48, 50, 51), 
@@ -102,7 +86,32 @@ sbst_exp <- sbst_exp[,-sort(k)[3:length(k)]]
 sbst_exp[is.na(sbst_exp)] <- 0
 
 
-save(sbst_exp, file= 'subset_exprmat.RData')
+
+# Epithelial By subset
+med_epi <- list()
+# med_epi_w <- list()
+e <- length(grep('Epithelial', unique(annot_df$subtype_B)))
+for (i in 1:e){
+    med_epi[[i]] <- median_by_pt(annot_df, ref, subset_celltype=T, celltype_col='subtype_B',
+    celltype_name=paste0('Epithelial_', i), ask_features=F, ft_idxs = c(15, 17:31, 33:35, 37:48, 50, 51), 
+    ptID_col = 'pt_ID', compare_groups = F)
+    med_epi[[i]] <- match_all(med_epi[[i]], med_all)
+}
+names(med_epi) <- paste0('Epi_', rep(1:e))
+x <- do.call("cbind", med_epi)
+k <- c(grep('CANARY', colnames(x)), grep('pt_ID', colnames(x)))
+med_epi <- x[,-sort(k)[3:length(k)]]
+
+# Merging all
+sbst_exp_2 <- do.call('cbind', 
+    list(med_endo, med_fibmes, med_tcells, med_CD8T, med_CD4T, med_mye, med_NK, med_epi))
+
+k <- c(grep('CANARY', colnames(sbst_exp_2)), grep('pt_ID', colnames(sbst_exp_2)))
+sbst_exp_2 <- sbst_exp_2[,-sort(k)[3:length(k)]]
+sbst_exp_2[is.na(sbst_exp_2)] <- 0
+
+
+save(sbst_exp, sbst_exp_2, file= 'subset_exprmat.RData')
 
 
 #############################################################################################################
@@ -110,48 +119,14 @@ save(sbst_exp, file= 'subset_exprmat.RData')
 
 load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/subsets/subset_exprmat.RData")
 
-library(readxl)
-CDE_TMA36 <- read_excel("~/Library/Mobile Documents/com~apple~CloudDocs/Documents/Vanderbilt/Massion_Lab/Projects/CyTOF_ADC_project/Datasets_info/CDEs/CDE_TMA36_2020FEB25_SA.xlsx", 
-    sheet = "ADC_mafe_processed", col_types = c("date", 
-        "text", "text", "date", "text", "text", 
-        "numeric", "numeric", "text", "text", 
-        "text", "numeric", "text", "numeric", 
-        "numeric", "numeric", "text", "text", 
-        "text", "text", "date", "numeric", 
-        "text", "text", "text", "text", "date", 
-        "text", "date", "text", "text", "date", 
-        "text", "text", "text", "text", "text", 
-        "text", "numeric", "text", "text", "text",
-        "text", "date", "text", "date", "text", 
-        "date", "text", "date", "date", "text", 
-        "text", "text", "date", "text", "text", 
-        "text", "text", "date", "text", "text", 
-        "text", "date", "text", "text", "date", 
-        "text"))
+# read edited CSV file as CDE_TMA36
+CDE_TMA36 <- read.csv(file = '/Users/senosam/Documents/Massion_lab/CyTOF_summary/CDE_TMA36_2020FEB25_SA.csv')
 
-x <- match(sbst_exp$pt_ID, CDE_TMA36$Patient_ID) # Select only pts with CyTOF data
+x <- match(sbst_exp$pt_ID, CDE_TMA36$pt_ID) # Select only pts with CyTOF data
 pData_cytof <- CDE_TMA36[x,]
-colnames(pData_cytof)[2] <- 'pt_ID'
-# pData_cytof[9,3] <- 'N'
-# pData_cytof$Family_History_Cancer_Type[9] <- 'Unknown'
-
-pData_cytof['Death_st'] <- 'No'
-k1 <- which(is.na(pData_cytof$Death_Date)==FALSE)
-pData_cytof[k1,'Death_st'] <- 'Yes'
-
-pData_cytof['Recurrence_st'] <- 'No'
-k2 <- which(is.na(pData_cytof$Recurrence_Date)==FALSE)
-pData_cytof[k2,'Recurrence_st'] <- 'Yes'
-
-pData_cytof['Progression_st'] <- 'No'
-k3 <- which(is.na(pData_cytof$Progression_Date)==FALSE)
-pData_cytof[k3,'Progression_st'] <- 'Yes'
-
-pData_cytof['DRP_st'] <- 'No'
-pData_cytof[c(k1,k2,k3),'DRP_st'] <- 'Yes'
 
 # Option 1: RData object with 2 data_frames
-save(sbst_exp, pData_cytof, file= 'subset_exprmat_clinical_annotations.RData')
+save(sbst_exp, sbst_exp_2, pData_cytof, file= 'subset_exprmat_clinical_annotations.RData')
 
 
 #2 Option 2: ExpressionSet Object containing assay data and clinical annotations
@@ -271,7 +246,7 @@ load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/subsets/s
 source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/20_ClustAnnot_functions.R")
 source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/40_DE_functions.R")
 
-
+#https://github.com/msenosain/data_analysis_cytof/commit/f3f4ba4ab8fd5eac8c4ad682f4dd59f2c41463c4#diff-e1e1d3d40573127e9ee0480caf1283d6
 
 # Get percentage
 k <- which(annot_df$cell_type_B == 'Epithelial')
@@ -286,22 +261,40 @@ prcnt_pt_stroma <- as.data.frame(cbind(Endothelial = ctb$Endothelial, Fib_Mesenc
 prcnt_pt_stroma2 <- as.data.frame(cbind(Endothelial = ctb$Endothelial, Fib_Mesenchymal = ctb$Fib_Mesenchymal,
  Tc_cells = stb$Tc_cells, Th_cells = stb$Th_cells, Myeloid = stb$Myeloid, 
  NK_cells = stb$NK_cells))
-#rownames(ctb) ==rownames(stb)
+
+prcnt_pt_stroma3 <- as.data.frame(cbind(Endothelial = ctb$Endothelial, Fib_Mesenchymal = ctb$Fib_Mesenchymal,
+ T_cells = stb2$T_cells, Tc_cells = stb$Tc_cells, Th_cells = stb$Th_cells, Myeloid = stb$Myeloid, 
+ NK_cells = stb$NK_cells))
 
 rownames(prcnt_pt_stroma) = rownames(ctb)
 rownames(prcnt_pt_stroma2) = rownames(ctb)
+rownames(prcnt_pt_stroma3) = rownames(ctb)
+
+
+ctb_all <- ClassAbundanceByPt(annot_df, ptID_col = 'pt_ID', class_col = 'cell_type_B')
+stb2_all <- ClassAbundanceByPt(annot_df, ptID_col = 'pt_ID', class_col = 'subtype_B2')
+stb_all <- ClassAbundanceByPt(annot_df, ptID_col = 'pt_ID', class_col = 'subtype_B')
+
+prcnt_pt <- as.data.frame(cbind(Endothelial = ctb_all$Endothelial, Fib_Mesenchymal = ctb_all$Fib_Mesenchymal,
+     T_cells = stb2_all$T_cells, Tc_cells = stb_all$Tc_cells, Th_cells = stb_all$Th_cells, 
+     Myeloid = stb_all$Myeloid, NK_cells = stb_all$NK_cells, stb_all[,grep('Epithelial', colnames(stb_all))]))
+#rownames(ctb) ==rownames(ctb_all)
+rownames(prcnt_pt) = rownames(ctb)
+
 
 
 epi <- annot_df[k,]
 stb_e <- ClassAbundanceByPt(epi, ptID_col = 'pt_ID', class_col = 'subtype_B')
 prcnt_pt_epi <- cbind(stb_e[,grep('Epithelial', colnames(stb_e))])
+#rownames(ctb) ==rownames(stb_e)
+rownames(prcnt_pt_epi) = rownames(ctb)
 
 
 x <- match(rownames(prcnt_pt_stroma), pData_cytof$pt_ID)
 pData_cytof <- pData_cytof[x,]
 
-save(pData_cytof, prcnt_pt_epi, prcnt_pt_stroma, prcnt_pt_stroma2, ctb, 
-    stb2, stb, stb_e, file = 'prcnts_by_pt.RData')
+save(pData_cytof, prcnt_pt, prcnt_pt_epi, prcnt_pt_stroma, prcnt_pt_stroma2, prcnt_pt_stroma3,
+    ctb, stb2, stb, stb_e, file = 'prcnts_by_pt.RData')
 
 
 ###########################################################################################################
@@ -373,5 +366,332 @@ Heatmap(data, name = "mat", row_km = 4,
 
 
 
+###########################################################################################################
+# Unsupervised analysis of cell type relative abundance among patients
 
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/subsets/subset_exprmat_clinical_annotations.RData")
+
+library(Hmisc)
+library(corrplot)
+library(ComplexHeatmap)
+library(RColorBrewer)
+library(circlize)
+
+# sbst_exp$pt_ID == pData_cytof$pt_ID should be TRUE for all
+
+rownames(sbst_exp_2) <- sbst_exp_2$pt_ID
+sbst_exp_2$pt_ID <- NULL
+sbst_exp_2$CANARY <- NULL
+
+corrmat <- rcorr(t(as.matrix(sbst_exp_2)))
+
+set.seed(45)
+Heatmap(corrmat$r, name = "mat", row_km = 2, column_km = 2,
+  heatmap_legend_param = list(color_bar = "continuous"))
+
+
+corrmat <- rcorr(t(as.matrix(sbst_exp))) # t for patients
+
+
+corrplot(corrmat$r, type = "upper", order = "hclust", 
+         tl.col = "black", tl.srt = 45)
+
+Heatmap(corrmat$r, name = "mat", row_km = 2, column_km = 2,
+  heatmap_legend_param = list(color_bar = "continuous"))
+
+
+###########################################################################################################
+# Same but excluding lineage markers
+
+
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/subsets/subset_exprmat_clinical_annotations.RData")
+
+library(Hmisc)
+library(corrplot)
+library(ComplexHeatmap)
+library(RColorBrewer)
+library(circlize)
+
+excl_i <- grep("*EpCAM*|*Cytokeratin*|*CK7*|*CD31*|*CD45*|*CD56*|*CD8*|*CD3*|*CD11b*|*CD90*|*CD4*|*Vimentin|*TP63*", colnames(sbst_exp))
+
+sbst_exp_2 <- sbst_exp_2[,-excl_i]
+
+# sbst_exp$pt_ID == pData_cytof$pt_ID should be TRUE for all
+
+rownames(sbst_exp_2) <- sbst_exp_2$pt_ID
+sbst_exp_2$pt_ID <- NULL
+sbst_exp_2$CANARY <- NULL
+
+corrmat <- rcorr(t(as.matrix(sbst_exp_2)))
+
+set.seed(45)
+Heatmap(corrmat$r, name = "mat", row_km = 2, column_km = 2,
+  heatmap_legend_param = list(color_bar = "continuous"), 
+  row_names_gp = gpar(fontsize = 8),
+  column_names_gp = gpar(fontsize = 8))
+
+
+
+
+###########################################################################################################
+# Using percentages
+
+
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/subsets/prcnts_by_pt.RData")
+
+
+library(Hmisc)
+library(corrplot)
+library(ComplexHeatmap)
+library(RColorBrewer)
+library(circlize)
+
+
+
+corrmat <- rcorr(t(as.matrix(prcnt_pt))) # t for patients
+
+
+ha = rowAnnotation(
+
+    canary = as.factor(pData_cytof$CANARY), #
+    age = pData_cytof$Age_at_collection,
+    gender = as.factor(pData_cytof$Gender),
+    race = as.factor(pData_cytof$Race),
+
+    ethnicity = as.factor(pData_cytof$Ethnicity),
+    BMI = pData_cytof$BMI,
+    smoking = as.factor(pData_cytof$Smoking_Status),
+    Pack_Years = pData_cytof$Pack_Years,
+
+    simple_anno_size = unit(0.5, "cm")
+)
+set.seed(45)
+Heatmap(corrmat$r, name = "mat", row_km = 2, column_km = 2,
+  heatmap_legend_param = list(color_bar = "continuous"),
+   right_annotation = ha)
+
+
+
+    canary = as.factor(pData_cytof$CANARY), #
+    age = pData_cytof$Age_at_collection,
+    gender = as.factor(pData_cytof$Gender),
+    race = as.factor(pData_cytof$Race),
+
+    ethnicity = as.factor(pData_cytof$Ethnicity),
+    BMI = pData_cytof$BMI,
+    smoking = as.factor(pData_cytof$Smoking_Status),
+    Pack_Years = pData_cytof$Pack_Years,
+    
+    Age_Started = pData_cytof$Age_Started,
+    Age_Quit = pData_cytof$Age_Quit,
+    Exposure = as.factor(pData_cytof$Exposure),
+    prior_cancer = as.factor(pData_cytof$Prior_Cancer),
+    
+    prior_cancer_type = as.factor(pData_cytof$Prior_Cancer_Type), #*
+    family_cancer = as.factor(pData_cytof$Family_History_Cancer_Type),
+    Chest_CT_Size = pData_cytof$Chest_CT_Size,
+    Chest_CT_Location = as.factor(pData_cytof$Chest_CT_Location),
+    
+    Chest_CT_Nodule_Density = as.factor(pData_cytof$Chest_CT_Nodule_Density), #
+    CT_Nodule_Margination = as.factor(pData_cytof$CT_Nodule_Margination),
+    PET_Lesion = as.factor(pData_cytof$PET_Lesion),
+    fev1 = as.numeric(pData_cytof$`FEV1%pred`),
+    
+    eighth_ed_stage = as.factor(pData_cytof$`8th_ed_path_stage`),
+    simplified_stage = as.factor(pData_cytof$Stages_simplified),
+    Path_Nodule_Size_cm = pData_cytof$Path_Nodule_Size_cm,
+    life_status = as.factor(pData_cytof$Living_Status),
+    
+    Death_st = as.factor(pData_cytof$Death_st),
+    Recurrence_st = as.factor(pData_cytof$Recurrence_st),
+    Progression_st = as.factor(pData_cytof$Progression_st),
+    DRP_st = as.factor(pData_cytof$DRP_st),
+
+
+
+
+
+###########################################################################################################
+# Combining percentages and protein expression
+
+
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/subsets/prcnts_by_pt.RData")
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/subsets/subset_exprmat_clinical_annotations.RData")
+
+
+library(Hmisc)
+library(corrplot)
+library(ComplexHeatmap)
+library(RColorBrewer)
+library(circlize)
+
+
+x <- match(rownames(prcnt_pt), pData_cytof$pt_ID)
+pData_cytof <- pData_cytof[x,]
+sbst_exp <- sbst_exp[x,]
+
+excl_i <- grep("*EpCAM*|*Cytokeratin*|*CK7*|*CD31*|*CD45*|*CD56*|*CD8*|*CD3*|*CD11b*|*CD90*|*CD4*|*Vimentin|*TP63*", colnames(sbst_exp))
+
+sbst_exp <- sbst_exp[,-excl_i]
+
+rownames(sbst_exp) <- sbst_exp$pt_ID
+sbst_exp$pt_ID <- NULL
+sbst_exp$CANARY <- NULL
+
+data <- cbind(sbst_exp, prcnt_pt)
+
+
+corrmat <- rcorr(t(as.matrix(data))) # t for patients
+
+
+ha = rowAnnotation(
+
+    canary = as.factor(pData_cytof$CANARY), #
+    age = pData_cytof$Age_at_collection,
+    gender = as.factor(pData_cytof$Gender),
+    race = as.factor(pData_cytof$Race),
+
+    simple_anno_size = unit(0.5, "cm")
+)
+set.seed(45)
+Heatmap(corrmat$r, name = "mat", row_km = 2, column_km = 2,
+  heatmap_legend_param = list(color_bar = "continuous"),
+   right_annotation = ha)
+
+
+
+    canary = as.factor(pData_cytof$CANARY), #
+    age = pData_cytof$Age_at_collection,
+    gender = as.factor(pData_cytof$Gender),
+    race = as.factor(pData_cytof$Race),
+
+    ethnicity = as.factor(pData_cytof$Ethnicity),
+    BMI = pData_cytof$BMI,
+    smoking = as.factor(pData_cytof$Smoking_Status),
+    Pack_Years = pData_cytof$Pack_Years,
+    
+    Age_Started = pData_cytof$Age_Started,
+    Age_Quit = pData_cytof$Age_Quit,
+    Exposure = as.factor(pData_cytof$Exposure),
+    prior_cancer = as.factor(pData_cytof$Prior_Cancer),
+    
+    prior_cancer_type = as.factor(pData_cytof$Prior_Cancer_Type), #*
+    family_cancer = as.factor(pData_cytof$Family_History_Cancer_Type),
+    Chest_CT_Size = pData_cytof$Chest_CT_Size,
+    Chest_CT_Location = as.factor(pData_cytof$Chest_CT_Location),
+    
+    Chest_CT_Nodule_Density = as.factor(pData_cytof$Chest_CT_Nodule_Density), #
+    CT_Nodule_Margination = as.factor(pData_cytof$CT_Nodule_Margination),
+    PET_Lesion = as.factor(pData_cytof$PET_Lesion),
+    fev1 = as.numeric(pData_cytof$`FEV1%pred`),
+    
+    eighth_ed_stage = as.factor(pData_cytof$`8th_ed_path_stage`),
+    simplified_stage = as.factor(pData_cytof$Stages_simplified),
+    Path_Nodule_Size_cm = pData_cytof$Path_Nodule_Size_cm,
+    life_status = as.factor(pData_cytof$Living_Status),
+    
+    Death_st = as.factor(pData_cytof$Death_st),
+    Recurrence_st = as.factor(pData_cytof$Recurrence_st),
+    Progression_st = as.factor(pData_cytof$Progression_st),
+    DRP_st = as.factor(pData_cytof$DRP_st),
+
+
+
+res <- rcorr(t(as.matrix(data)), type = 'spearman' ) # t for patients
+
+corrected_pvals <- p.adjust(res$P, method = 'BH')
+corrected_pvals <- matrix(corrected_pvals, nrow = ncol(res$P), 
+    ncol = ncol(res$P))
+colnames(corrected_pvals)<- colnames(res$P)
+rownames(corrected_pvals)<- rownames(res$P)
+
+par(font = 2) # bold axis labels
+par(cex=0.9) # size
+par(lwd = 1.2) # line width
+corrplot::corrplot(res$r, type="upper", order='original', tl.col = "black", 
+    tl.srt = 45, p.mat = corrected_pvals , sig.level = 0.05, 
+    insig = "blank", method = 'color', addgrid.col = 'grey', tl.cex = 1)
+
+corrplot::corrplot(res$r, type="upper", order='original', tl.col = "black", 
+    tl.srt = 45, p.mat = corrected_pvals , sig.level = 0.05, 
+    insig = "blank", method = 'color', addCoef.col="black", 
+    number.font = 1, number.cex = 0.8, addgrid.col = 'grey', tl.cex = 1)
+
+
+###########################################################################################################
+
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/subsets/subset_exprmat_clinical_annotations.RData")
+
+library(Hmisc)
+library(corrplot)
+library(ComplexHeatmap)
+library(RColorBrewer)
+library(circlize)
+
+data <- sbst_exp
+
+#excl_i <- grep("*EpCAM*|*Cytokeratin*|*CK7*|*CD31*|*CD45*|*CD56*|*CD8*|*CD3*|*CD11b*|*CD90*|*CD4*|*Vimentin|*TP63*", colnames(sbst_exp))
+
+#data <- data[,-excl_i]
+
+# sbst_exp$pt_ID == pData_cytof$pt_ID should be TRUE for all
+
+rownames(data) <- data$pt_ID
+data$pt_ID <- NULL
+data$CANARY <- NULL
+
+corrmat <- rcorr(t(as.matrix(data)))
+
+
+ha = rowAnnotation(
+
+    Death_st = as.factor(pData_cytof$Death_st),
+    Recurrence_st = as.factor(pData_cytof$Recurrence_st),
+    Progression_st = as.factor(pData_cytof$Progression_st),
+    DRP_st = as.factor(pData_cytof$DRP_st),
+
+    simple_anno_size = unit(0.5, "cm")
+)
+set.seed(45)
+Heatmap(corrmat$r, name = "mat", row_km = 2, column_km = 2,
+  heatmap_legend_param = list(color_bar = "continuous"), 
+  row_names_gp = gpar(fontsize = 8),
+  column_names_gp = gpar(fontsize = 8), right_annotation = ha)
+
+
+
+    canary = as.factor(pData_cytof$CANARY), #
+    age = pData_cytof$Age_at_collection,
+    gender = as.factor(pData_cytof$Gender),
+    race = as.factor(pData_cytof$Race),
+
+    ethnicity = as.factor(pData_cytof$Ethnicity),
+    BMI = pData_cytof$BMI,
+    smoking = as.factor(pData_cytof$Smoking_Status),
+    Pack_Years = pData_cytof$Pack_Years,
+    
+    Age_Started = pData_cytof$Age_Started,
+    Age_Quit = pData_cytof$Age_Quit,
+    Exposure = as.factor(pData_cytof$Exposure),
+    prior_cancer = as.factor(pData_cytof$Prior_Cancer),
+    
+    prior_cancer_type = as.factor(pData_cytof$Prior_Cancer_Type), #*
+    family_cancer = as.factor(pData_cytof$Family_History_Cancer_Type),
+    Chest_CT_Size = pData_cytof$Chest_CT_Size,
+    Chest_CT_Location = as.factor(pData_cytof$Chest_CT_Location),
+    
+    Chest_CT_Nodule_Density = as.factor(pData_cytof$Chest_CT_Nodule_Density), #
+    CT_Nodule_Margination = as.factor(pData_cytof$CT_Nodule_Margination),
+    PET_Lesion = as.factor(pData_cytof$PET_Lesion),
+    fev1 = as.numeric(pData_cytof$`FEV1%pred`),
+    
+    eighth_ed_stage = as.factor(pData_cytof$`8th_ed_path_stage`),
+    simplified_stage = as.factor(pData_cytof$Stages_simplified),
+    Path_Nodule_Size_cm = pData_cytof$Path_Nodule_Size_cm,
+    life_status = as.factor(pData_cytof$Living_Status),
+    
+    Death_st = as.factor(pData_cytof$Death_st),
+    Recurrence_st = as.factor(pData_cytof$Recurrence_st),
+    Progression_st = as.factor(pData_cytof$Progression_st),
+    DRP_st = as.factor(pData_cytof$DRP_st),
 

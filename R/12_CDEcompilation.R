@@ -33,4 +33,4 @@ CDE_TMA36[c(k1,k2,k3),'DRP_st'] <- 'Yes'
 
 # Save csv file
 
-write.csv(CDE_TMA36, "CDE_TMA36_2020FEB25_SA.csv")
+write.csv(CDE_TMA36, "CDE_TMA36_2020FEB25_SA.csv", row.names = FALSE)

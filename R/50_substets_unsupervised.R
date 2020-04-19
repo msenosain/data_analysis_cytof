@@ -168,10 +168,8 @@ pairs.breaks_med <- c(0,1.5,scale_max)
 
 ha = rowAnnotation(
 
-    Death_st = as.factor(pData_cytof$Death_st),
-    Recurrence_st = as.factor(pData_cytof$Recurrence_st),
-    Progression_st = as.factor(pData_cytof$Progression_st),
-    DRP_st = as.factor(pData_cytof$DRP_st),
+    Hist_pred = as.factor(pData_cytof$Hist_predominant),
+    Hist_sec = as.factor(pData_cytof$Hist_other_patterns),
 
     simple_anno_size = unit(0.5, "cm")
 )
@@ -217,6 +215,9 @@ Heatmap(data, name = "mat", row_km = 4, column_km = 5,
     Progression_st = as.factor(pData_cytof$Progression_st),
     DRP_st = as.factor(pData_cytof$DRP_st),
 
+
+    Hist_pred = as.factor(pData_cytof$Hist_predominant),
+    Hist_sec = as.factor(pData_cytof$Hist_other_patterns),
 
 
 
@@ -363,6 +364,9 @@ Heatmap(data, name = "mat", row_km = 4,
     Recurrence_st = as.factor(pData_cytof$Recurrence_st),
     Progression_st = as.factor(pData_cytof$Progression_st),
     DRP_st = as.factor(pData_cytof$DRP_st),
+
+    Hist_pred = as.factor(pData_cytof$Hist_predominant),
+    Hist_sec = as.factor(pData_cytof$Hist_other_patterns),
 
 
 
@@ -694,4 +698,7 @@ Heatmap(corrmat$r, name = "mat", row_km = 2, column_km = 2,
     Recurrence_st = as.factor(pData_cytof$Recurrence_st),
     Progression_st = as.factor(pData_cytof$Progression_st),
     DRP_st = as.factor(pData_cytof$DRP_st),
+
+    Hist_pred = as.factor(pData_cytof$Hist_predominant),
+    Hist_sec = as.factor(pData_cytof$Hist_other_patterns),
 

@@ -1,0 +1,320 @@
+---
+title: "Summary of CyTOF dataset"
+author: "Mafe Senosain"
+date: "`r Sys.Date()`"
+output:
+    html_document:
+        toc: true
+        toc_float: true
+---
+
+```{r setup, include=FALSE}
+library(ggplot2)
+library(RColorBrewer)
+library(gridExtra)
+library(reshape2)
+library(jcolors)
+library(ComplexHeatmap)
+knitr::opts_chunk$set(echo = FALSE)
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/20_ClustAnnot_functions.R")
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/30_DA_functions.R")
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/40_DE_functions.R")
+```
+
+```{r, echo=FALSE}
+# Load data
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/cellsubtypes.RData")
+# read edited CSV file as CDE_TMA36
+CDE_TMA36 <- read.csv(file = '/Users/senosam/Documents/Massion_lab/CyTOF_summary/CDE_TMA36_2020FEB25_SA.csv')
+```
+
+```{r, echo=FALSE}
+# Data pre-processing
+# Changing un-identified T cells into "Other_immune"
+k <- which(annot_df$subtype_B =='T_cells')
+k2 <- which(annot_df$subtype_B =='NK_cells')
+
+annot_df['subtype_B'] <- as.character(annot_df$subtype_B)
+annot_df[c(k,k2), 'subtype_B'] <- 'Other_immune'
+annot_df$subtype_B <- as.factor(annot_df$subtype_B)
+
+annot_df['subtype_B4'] <- as.character(annot_df$subtype_B)
+annot_df[which(annot_df$cell_type_B=='Epithelial'), 'subtype_B4'] <- 'Epithelial'
+annot_df$subtype_B4 <- as.factor(annot_df$subtype_B4)
+annot_df$subtype_B4 <- factor(annot_df$subtype_B4, levels = c("Epithelial", "Endothelial", "Fib_Mesenchymal", "Other_immune", "Myeloid", "Tc_cells", "Th_cells"))
+
+# All cell/sub types B have Fib_Mesenchymal
+ref <- ref[-42,] # sample 13376 has been collected twice and will be merged, only one ref is needed
+grp <- 'B'
+CDE_TMA36 <- CDE_TMA36[match(ref$pt_ID, CDE_TMA36$pt_ID),] # Select only pts with CyTOF data
+
+```
+
+# Abundance analysis
+
+## Major cell types
+
+### Major cell types (immune as one)
+```{r, echo=FALSE}
+prcnt_by_pt <- ClassAbundanceByPt(data=annot_df, ptID_col = 'pt_ID', 
+    class_col = paste0('cell_type_', grp))
+```
+
+```{r, echo=FALSE}
+# Dendrogram and barplot
+par(mar=c(3.5,6,1,2))
+par(mgp=c(3,0.5,0))
+dendrogram_barplot(prcnt_by_pt)
+
+ha = HeatmapAnnotation(
+    CANARY = as.factor(CDE_TMA36$CANARY),
+    simple_anno_size = unit(0.5, "cm")
+)
+
+Heatmap(t(as.matrix(scale(prcnt_by_pt))), name = "z-score", 
+  heatmap_legend_param = list(color_bar = "continuous"), 
+  row_names_gp = gpar(fontsize = 8),
+  column_names_gp = gpar(fontsize = 8),
+  top_annotation = ha)
+
+# Correlation plot
+corr_plot(prcnt_by_pt)
+```
+
+
+### Major cell types and immune subtypes
+```{r, echo=FALSE}
+prcnt_by_pt <- ClassAbundanceByPt(data=annot_df, ptID_col = 'pt_ID', 
+    class_col = paste0('subtype_', grp, '4'))
+prcnt_by_pt['ALL_Immune'] <- rowSums(prcnt_by_pt[,4:7])
+```
+
+```{r, echo=FALSE}
+# Cluster dendrogram and barplot
+par(mar=c(3.5,6,1,2))
+par(mgp=c(3,0.5,0))
+dendrogram_barplot(prcnt_by_pt)
+
+ha = HeatmapAnnotation(
+    CANARY = as.factor(CDE_TMA36$CANARY),
+    simple_anno_size = unit(0.5, "cm")
+)
+set.seed(101)
+Heatmap(t(as.matrix(scale(prcnt_by_pt))), name = "z-score",
+        heatmap_legend_param = list(color_bar = "continuous"), 
+        row_names_gp = gpar(fontsize = 8),
+        column_names_gp = gpar(fontsize = 8),
+        top_annotation = ha,
+        column_km = 2)
+
+# Correlation plot
+corr_plot(prcnt_by_pt)
+```
+
+## Subtypes
+
+### All subtypes
+
+```{r, echo=FALSE}
+sbst <- subset(annot_df, cell_type_A != 'Epithelial')
+sbst[,paste0('subtype_', grp)] <- factor(sbst[,paste0('subtype_', grp)])
+prcnt_by_pt <- ClassAbundanceByPt(data=sbst, ptID_col = 'pt_ID', 
+    class_col = paste0('subtype_', grp))
+```
+
+```{r, echo=FALSE}
+sbst <- subset(annot_df, cell_type_A == 'Epithelial')
+sbst$subtype_A <- factor(sbst$subtype_A)
+prcnt_by_ptE <- ClassAbundanceByPt(data=sbst, ptID_col = 'pt_ID', 
+    class_col = 'subtype_A')
+prcnt_by_pt <- cbind(prcnt_by_pt/2, prcnt_by_ptE/2)
+```
+
+```{r, echo=FALSE}
+# Cluster dendrogram and barplot
+par(mar=c(3.5,6,1,2))
+par(mgp=c(3,0.5,0))
+dendrogram_barplot(prcnt_by_pt)
+
+ha = HeatmapAnnotation(
+    CANARY = as.factor(CDE_TMA36$CANARY),
+    simple_anno_size = unit(0.5, "cm")
+)
+Heatmap(t(as.matrix(scale(prcnt_by_pt))), name = "z-score",
+        heatmap_legend_param = list(color_bar = "continuous"), 
+        row_names_gp = gpar(fontsize = 8),
+        column_names_gp = gpar(fontsize = 8),
+        top_annotation = ha)
+
+# Correlation plot
+corr_plot(prcnt_by_pt)
+```
+
+#### Correlation of Epithelial HLA-DR+ subsets and immune cells
+```{r echo=FALSE, fig.width = 5, fig.height = 2}
+epi_path <- '/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/figs/heatmap_epi_kmeans.png'
+knitr::include_graphics(epi_path)
+
+# Scatter plots
+ggpubr::ggscatter(prcnt_by_pt*100, x = "Myeloid", y = c('Epithelial_8', 'Epithelial_9', 'Epithelial_10'),
+          add = "reg.line", conf.int = TRUE, combine = TRUE,
+          cor.coef = TRUE, cor.method = "spearman", add.params = list(color = 'grey'),
+          xlab = "Myeloid cells", ylab = 'Relative abundance (%)')
+ggpubr::ggscatter(prcnt_by_pt*100, x = "Tc_cells", y = c('Epithelial_8', 'Epithelial_9', 'Epithelial_10'),
+          add = "reg.line", conf.int = TRUE, combine = TRUE,
+          cor.coef = TRUE, cor.method = "spearman", add.params = list(color = 'grey'),
+          xlab = "CD8+ T cells", ylab = 'Relative abundance (%)')
+
+ggpubr::ggscatter(prcnt_by_pt*100, x = "Th_cells", y = c('Epithelial_8','Epithelial_9', 'Epithelial_10'),
+          add = "reg.line", conf.int = TRUE, combine = TRUE,
+          cor.coef = TRUE, cor.method = "spearman", add.params = list(color = 'grey'),
+          xlab = "CD4+ T cells", ylab = 'Relative abundance (%)')
+    
+```
+
+### All subtypes (epi clusters grouped)
+```{r, echo=FALSE}
+sbst <- subset(annot_df, cell_type_A != 'Epithelial')
+sbst[,paste0('subtype_', grp)] <- factor(sbst[,paste0('subtype_', grp)])
+prcnt_by_pt <- ClassAbundanceByPt(data=sbst, ptID_col = 'pt_ID', 
+    class_col = paste0('subtype_', grp))
+```
+
+```{r, echo=FALSE}
+sbst <- subset(annot_df, cell_type_A == 'Epithelial')
+sbst$subtype_A <- factor(sbst$subtype_A)
+prcnt_by_ptE <- ClassAbundanceByPt(data=sbst, ptID_col = 'pt_ID', 
+    class_col = 'subtype_A')
+
+prcnt_by_ptE <- cbind(Epi_123=rowSums(prcnt_by_ptE[,c(1,3,4)]), Epi_456=rowSums(prcnt_by_ptE[,5:7]), 
+                     Epi_7=prcnt_by_ptE$Epithelial_7, Epi_8910=rowSums(prcnt_by_ptE[,c(2,9,10)]))
+
+prcnt_by_pt <- cbind(prcnt_by_pt/2, prcnt_by_ptE/2)
+```
+
+```{r, echo=FALSE}
+# Cluster dendrogram and barplot
+par(mar=c(3.5,6,1,2))
+par(mgp=c(3,0.5,0))
+dendrogram_barplot(prcnt_by_pt)
+
+ha = HeatmapAnnotation(
+    CANARY = as.factor(CDE_TMA36$CANARY),
+    simple_anno_size = unit(0.5, "cm")
+)
+set.seed(101)
+Heatmap(t(as.matrix(scale(prcnt_by_pt))), name = "z-score",
+        heatmap_legend_param = list(color_bar = "continuous"), 
+        row_names_gp = gpar(fontsize = 8),
+        column_names_gp = gpar(fontsize = 8),
+        top_annotation = ha,
+        column_km = 3)
+
+# Correlation plot
+corr_plot(prcnt_by_pt)
+```
+
+#### Correlation of Epithelial HLA-DR+ subsets and immune cells
+```{r echo=FALSE, fig.width = 5, fig.height = 2}
+
+# Scatter plots
+ggpubr::ggscatter(prcnt_by_pt*100, x = 'Epi_8910', y = c("Myeloid", 'Tc_cells', 'Th_cells'),
+          add = "reg.line", conf.int = TRUE, combine = TRUE,
+          cor.coef = TRUE, cor.method = "spearman", add.params = list(color = 'grey'),
+          xlab = "Epi_8910", ylab = 'Relative abundance (%)')
+
+```
+
+## Epithelial cells only
+
+### All Epithelial subtypes
+```{r, echo=FALSE}
+sbst <- subset(annot_df, cell_type_A == 'Epithelial')
+sbst$subtype_A <- factor(sbst$subtype_A)
+prcnt_by_pt <- ClassAbundanceByPt(data=sbst, ptID_col = 'pt_ID', 
+    class_col = 'subtype_A')
+```
+
+```{r, echo=FALSE}
+# Cluster dendrogram and barplot
+par(mar=c(3.5,6,1,2))
+par(mgp=c(3,0.5,0))
+dendrogram_barplot(prcnt_by_pt)
+
+ha = HeatmapAnnotation(
+    CANARY = as.factor(CDE_TMA36$CANARY),
+    simple_anno_size = unit(0.5, "cm")
+)
+Heatmap(t(as.matrix(scale(prcnt_by_pt))), name = "z-score",
+        heatmap_legend_param = list(color_bar = "continuous"), 
+        row_names_gp = gpar(fontsize = 8),
+        column_names_gp = gpar(fontsize = 8),
+        top_annotation = ha)
+
+# Correlation plot
+corr_plot(prcnt_by_pt)
+```
+
+### All Epithelial subtypes (combined clusters)
+```{r, echo=FALSE}
+sbst <- subset(annot_df, cell_type_A == 'Epithelial')
+sbst$subtype_A <- factor(sbst$subtype_A)
+prcnt_by_pt <- ClassAbundanceByPt(data=sbst, ptID_col = 'pt_ID', 
+    class_col = 'subtype_A')
+
+prcnt_by_pt <- cbind(Epi_123=rowSums(prcnt_by_pt[,c(1,3,4)]), Epi_456=rowSums(prcnt_by_pt[,5:7]), 
+                     Epi_7=prcnt_by_pt$Epithelial_7, Epi_8910=rowSums(prcnt_by_pt[,c(2,9,10)]))
+```
+
+```{r, echo=FALSE}
+# Cluster dendrogram and barplot
+par(mar=c(3.5,6,1,2))
+par(mgp=c(3,0.5,0))
+dendrogram_barplot(prcnt_by_pt)
+
+ha = HeatmapAnnotation(
+    CANARY = as.factor(CDE_TMA36$CANARY),
+    simple_anno_size = unit(0.5, "cm")
+)
+set.seed(101)
+Heatmap(t(as.matrix(scale(prcnt_by_pt))), name = "z-score",
+        heatmap_legend_param = list(color_bar = "continuous"), 
+        row_names_gp = gpar(fontsize = 8),
+        column_names_gp = gpar(fontsize = 8),
+        top_annotation = ha,
+        column_km = 2)
+
+# Correlation plot
+corr_plot(prcnt_by_pt)
+```
+
+## Stromal cells only
+
+### All subtypes
+```{r, echo=FALSE}
+sbst <- subset(annot_df, cell_type_A != 'Epithelial')
+sbst[,paste0('subtype_', grp)] <- factor(sbst[,paste0('subtype_', grp)])
+prcnt_by_pt <- ClassAbundanceByPt(data=sbst, ptID_col = 'pt_ID', 
+    class_col = paste0('subtype_', grp))
+```
+
+```{r, echo=FALSE}
+# Cluster dendrogram and barplot
+par(mar=c(3.5,6,1,2))
+par(mgp=c(3,0.5,0))
+dendrogram_barplot(prcnt_by_pt)
+
+ha = HeatmapAnnotation(
+    CANARY = as.factor(CDE_TMA36$CANARY),
+    simple_anno_size = unit(0.5, "cm")
+)
+Heatmap(t(as.matrix(scale(prcnt_by_pt))), name = "z-score",
+        heatmap_legend_param = list(color_bar = "continuous"), 
+        row_names_gp = gpar(fontsize = 8),
+        column_names_gp = gpar(fontsize = 8),
+        top_annotation = ha)
+
+# Correlation plot
+corr_plot(prcnt_by_pt)
+```
+

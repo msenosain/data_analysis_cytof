@@ -1,0 +1,471 @@
+---
+title: "Differential Exp Analysis for TMA36 (extreme groups)"
+author: "Mafe Senosain"
+date: "`r Sys.Date()`"
+output:
+    html_document:
+        toc: true
+        toc_float: true
+---
+
+```{r setup, include=FALSE}
+library(ggplot2)
+library(gplots)
+library(RColorBrewer)
+library(pheatmap)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
+
+
+# imp <- as.data.frame(ftimp_rf$importance)
+# imp$varnames <- rownames(imp) # row names to column
+# rownames(imp) <- NULL  
+# 
+# # this is the plot part, be sure to use reorder with the correct measure name
+# library(ggplot2) 
+# ggplot(imp, aes(x=reorder(varnames, Overall), weight=Overall)) + 
+#   geom_bar() +
+#   ylab("Overall") +
+#   xlab("Variable Name")
+```
+
+# Using Random Forest classification
+
+## Endothelial cells
+```{r echo=FALSE}
+# Load data
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/RF/Endothelial_RFmodel.RData")
+
+#plot(ftimp_rf)
+par(mai=c(1,2,1,1), mgp=c(0.2,0.5,0))
+x <- order(ftimp_rf$importance, decreasing = T)
+nms <-  rownames(ftimp_rf$importance)[x]
+n <- 10
+barplot(sort(ftimp_rf$importance$Overall, decreasing = T)[n:1], main = 'Feature importance', 
+        horiz = T, names.arg = nms[n:1], las=1, col = 'darkblue', cex.names=0.8)
+
+TrainSet <- TrainSet[,c('CANARY',nms[1:n])]
+rs <- reshape::melt(TrainSet)
+
+ggplot(rs, aes(x=value, fill=CANARY)) + 
+  geom_density(alpha=.3) +
+  facet_wrap(~variable) +
+  ylim(0, 2)
+
+conf_rf
+```
+
+
+## Fibroblasts and Mesenchymal cells
+```{r echo=FALSE}
+# Load data
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/RF/Fib_Mesenchymal_RFmodel.RData")
+
+#plot(ftimp_rf)
+par(mai=c(1,2,1,1), mgp=c(0.2,0.5,0))
+x <- order(ftimp_rf$importance, decreasing = T)
+nms <-  rownames(ftimp_rf$importance)[x]
+n <- 10
+barplot(sort(ftimp_rf$importance$Overall, decreasing = T)[n:1], main = 'Feature importance', 
+        horiz = T, names.arg = nms[n:1], las=1, col = 'darkblue', cex.names=0.8)
+
+TrainSet <- TrainSet[,c('CANARY',nms[1:n])]
+rs <- reshape::melt(TrainSet)
+
+ggplot(rs, aes(x=value, fill=CANARY)) + 
+  geom_density(alpha=.3) +
+  facet_wrap(~variable) +
+  ylim(0, 2)
+
+conf_rf
+```
+
+
+## T cells
+```{r echo=FALSE}
+# Load data
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/RF/T_cells_RFmodel.RData")
+
+#plot(ftimp_rf)
+par(mai=c(1,2,1,1), mgp=c(0.2,0.5,0))
+x <- order(ftimp_rf$importance, decreasing = T)
+nms <-  rownames(ftimp_rf$importance)[x]
+n <- 10
+barplot(sort(ftimp_rf$importance$Overall, decreasing = T)[n:1], main = 'Feature importance', 
+        horiz = T, names.arg = nms[n:1], las=1, col = 'darkblue', cex.names=0.8)
+
+TrainSet <- TrainSet[,c('CANARY',nms[1:n])]
+rs <- reshape::melt(TrainSet)
+
+ggplot(rs, aes(x=value, fill=CANARY)) + 
+  geom_density(alpha=.3) +
+  facet_wrap(~variable) +
+  ylim(0, 2)
+
+conf_rf
+```
+
+
+## CD8+ T cells
+```{r echo=FALSE}
+# Load data
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/RF/Tc_cells_RFmodel.RData")
+
+#plot(ftimp_rf)
+par(mai=c(1,2,1,1), mgp=c(0.2,0.5,0))
+x <- order(ftimp_rf$importance, decreasing = T)
+nms <-  rownames(ftimp_rf$importance)[x]
+n <- 10
+barplot(sort(ftimp_rf$importance$Overall, decreasing = T)[n:1], main = 'Feature importance', 
+        horiz = T, names.arg = nms[n:1], las=1, col = 'darkblue', cex.names=0.8)
+
+TrainSet <- TrainSet[,c('CANARY',nms[1:n])]
+rs <- reshape::melt(TrainSet)
+
+ggplot(rs, aes(x=value, fill=CANARY)) + 
+  geom_density(alpha=.3) +
+  facet_wrap(~variable) +
+  ylim(0, 2)
+
+conf_rf
+```
+
+
+## CD4+ T cells
+```{r echo=FALSE}
+# Load data
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/RF/Th_cells_RFmodel.RData")
+
+#plot(ftimp_rf)
+par(mai=c(1,2,1,1), mgp=c(0.2,0.5,0))
+x <- order(ftimp_rf$importance, decreasing = T)
+nms <-  rownames(ftimp_rf$importance)[x]
+n <- 10
+barplot(sort(ftimp_rf$importance$Overall, decreasing = T)[n:1], main = 'Feature importance', 
+        horiz = T, names.arg = nms[n:1], las=1, col = 'darkblue', cex.names=0.8)
+
+TrainSet <- TrainSet[,c('CANARY',nms[1:n])]
+rs <- reshape::melt(TrainSet)
+
+ggplot(rs, aes(x=value, fill=CANARY)) + 
+  geom_density(alpha=.3) +
+  facet_wrap(~variable) +
+  ylim(0, 2)
+
+conf_rf
+```
+
+
+## Myeloid cells
+```{r echo=FALSE}
+# Load data
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/RF/Myeloid_RFmodel.RData")
+
+#plot(ftimp_rf)
+par(mai=c(1,2,1,1), mgp=c(0.2,0.5,0))
+x <- order(ftimp_rf$importance, decreasing = T)
+nms <-  rownames(ftimp_rf$importance)[x]
+n <- 10
+barplot(sort(ftimp_rf$importance$Overall, decreasing = T)[n:1], main = 'Feature importance', 
+        horiz = T, names.arg = nms[n:1], las=1, col = 'darkblue', cex.names=0.8)
+
+TrainSet <- TrainSet[,c('CANARY',nms[1:n])]
+rs <- reshape::melt(TrainSet)
+
+ggplot(rs, aes(x=value, fill=CANARY)) + 
+  geom_density(alpha=.3) +
+  facet_wrap(~variable) +
+  ylim(0, 2)
+
+conf_rf
+```
+
+
+## NK cells
+```{r echo=FALSE}
+# Load data
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/RF/NK_cells_RFmodel.RData")
+
+#plot(ftimp_rf)
+par(mai=c(1,2,1,1), mgp=c(0.2,0.5,0))
+x <- order(ftimp_rf$importance, decreasing = T)
+nms <-  rownames(ftimp_rf$importance)[x]
+n <- 10
+barplot(sort(ftimp_rf$importance$Overall, decreasing = T)[n:1], main = 'Feature importance', 
+        horiz = T, names.arg = nms[n:1], las=1, col = 'darkblue', cex.names=0.8)
+
+TrainSet <- TrainSet[,c('CANARY',nms[1:n])]
+rs <- reshape::melt(TrainSet)
+
+ggplot(rs, aes(x=value, fill=CANARY)) + 
+  geom_density(alpha=.3) +
+  facet_wrap(~variable) +
+  ylim(0, 2)
+
+conf_rf
+```
+
+
+## Epithelial cells
+```{r echo=FALSE}
+# Load data
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/RF/Epithelial_RFmodel.RData")
+
+#plot(ftimp_rf)
+par(mai=c(1,2,1,1), mgp=c(0.2,0.5,0))
+x <- order(ftimp_rf$importance, decreasing = T)
+nms <-  rownames(ftimp_rf$importance)[x]
+n <- 10
+barplot(sort(ftimp_rf$importance$Overall, decreasing = T)[n:1], main = 'Feature importance', 
+        horiz = T, names.arg = nms[n:1], las=1, col = 'darkblue', cex.names=0.8)
+
+TrainSet <- TrainSet[,c('CANARY',nms[1:n])]
+rs <- reshape::melt(TrainSet)
+
+ggplot(rs, aes(x=value, fill=CANARY)) + 
+  geom_density(alpha=.3) +
+  facet_wrap(~variable) +
+  ylim(0, 2)
+
+conf_rf
+```
+
+
+# Comparing Median expression of each marker per cell type
+
+```{r echo=FALSE}
+# Load data
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/Med_exp/DE_bygroup.RData") # from DE_medex_script.R
+```
+
+## Endothelial cells
+```{r echo=FALSE}
+sbst <- reshape::melt(med_endo$Med_expression)
+#plot(ftimp_rf)
+ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,10)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22))
+
+med_endo$pvals
+```
+
+```{r echo=FALSE}
+plotly::ggplotly(ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,6)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22)))
+```
+
+
+## Fibroblasts/Mesenchymal cells
+```{r echo=FALSE}
+sbst <- reshape::melt(med_fibmes$Med_expression)
+#plot(ftimp_rf)
+ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,10)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22))
+
+med_fibmes$pvals
+```
+
+```{r echo=FALSE}
+plotly::ggplotly(ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,6)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22)))
+```
+
+
+## Immune cells
+```{r echo=FALSE}
+sbst <- reshape::melt(med_imm$Med_expression)
+#plot(ftimp_rf)
+ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,10)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22))
+
+med_imm$pvals
+```
+
+```{r echo=FALSE}
+plotly::ggplotly(ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,6)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22)))
+```
+
+
+## T cells
+```{r echo=FALSE}
+sbst <- reshape::melt(med_tcells$Med_expression)
+#plot(ftimp_rf)
+ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,10)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22))
+
+med_tcells$pvals
+```
+
+```{r echo=FALSE}
+plotly::ggplotly(ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,6)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22)))
+```
+
+
+## CD8 T cells
+```{r echo=FALSE}
+sbst <- reshape::melt(med_CD8T$Med_expression)
+#plot(ftimp_rf)
+ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,10)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22))
+
+med_CD8T$pvals
+```
+
+```{r echo=FALSE}
+plotly::ggplotly(ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,6)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22)))
+```
+
+
+## CD4 T cells
+```{r echo=FALSE}
+sbst <- reshape::melt(med_CD4T$Med_expression)
+#plot(ftimp_rf)
+ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,10)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22))
+
+med_CD4T$pvals
+```
+
+```{r echo=FALSE}
+plotly::ggplotly(ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,6)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22)))
+```
+
+
+## Myeloid cells
+```{r echo=FALSE}
+sbst <- reshape::melt(med_mye$Med_expression)
+#plot(ftimp_rf)
+ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,10)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22))
+
+med_mye$pvals
+```
+
+```{r echo=FALSE}
+plotly::ggplotly(ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,6)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22)))
+```
+
+
+## NK cells
+```{r echo=FALSE}
+sbst <- reshape::melt(med_NK$Med_expression)
+#plot(ftimp_rf)
+ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,10)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22))
+
+med_NK$pvals
+```
+
+```{r echo=FALSE}
+plotly::ggplotly(ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,6)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22)))
+```
+
+
+## Epithelial cells
+```{r echo=FALSE}
+sbst <- reshape::melt(med_epi$Med_expression)
+#plot(ftimp_rf)
+ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,10)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22))
+
+med_epi$pvals
+```
+
+```{r echo=FALSE}
+plotly::ggplotly(ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,6)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22)))
+```

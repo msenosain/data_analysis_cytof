@@ -154,7 +154,9 @@ corr_plot(prcnt_by_pt)
 ```{r echo=FALSE, fig.width = 5, fig.height = 2}
 epi_path <- '/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/figs/heatmap_epi_kmeans.png'
 knitr::include_graphics(epi_path)
+```
 
+```{r echo=FALSE, fig.width = 12, fig.height = 4}
 # Scatter plots
 ggpubr::ggscatter(prcnt_by_pt*100, x = "Myeloid", y = c('Epithelial_8', 'Epithelial_9', 'Epithelial_10'),
           add = "reg.line", conf.int = TRUE, combine = TRUE,
@@ -214,8 +216,45 @@ Heatmap(t(as.matrix(scale(prcnt_by_pt))), name = "z-score",
 corr_plot(prcnt_by_pt)
 ```
 
+```{r}
+load("/Users/senosam/Documents/Massion_lab/RNASeq_summary/rnaseq.RData")
+clust_eigen <- data.frame(read_tsv('/Users/senosam/Documents/Massion_lab/RNASeq_summary/Results_23_Sep_20_2/Eigengenes.tsv'))
+rownames(clust_eigen) <- clust_eigen$X1
+clust_eigen$X1 <- NULL
+clust_eigen <- t(clust_eigen)
+
+p_all <- p_all[na.omit(match(p_all$Vantage_ID, rownames(clust_eigen))),]
+p_all <- p_all[match(rownames(prcnt_by_pt), p_all$pt_ID),]
+#p_all <- p_all[na.omit(match(p_all$pt_ID, rownames(prcnt_by_pt))),]
+clust_eigen <- data.frame(clust_eigen[match(p_all$Vantage_ID, rownames(clust_eigen)),])
+rownames(clust_eigen) <- rownames(prcnt_by_pt)
+```
+
+```{r, echo=FALSE}
+# Cluster dendrogram and barplot
+par(mar=c(3.5,6,1,2))
+par(mgp=c(3,0.5,0))
+
+ha = HeatmapAnnotation(
+    CANARY = as.factor(CDE_TMA36$CANARY),
+    C0=clust_eigen$C0,
+    C1=clust_eigen$C1,
+    C2=clust_eigen$C2,
+    C3=clust_eigen$C3,
+    simple_anno_size = unit(0.5, "cm")
+)
+set.seed(50)
+Heatmap(t(as.matrix(scale(prcnt_by_pt))), name = "z-score",
+        heatmap_legend_param = list(color_bar = "continuous"), 
+        row_names_gp = gpar(fontsize = 8),
+        column_names_gp = gpar(fontsize = 8),
+        top_annotation = ha)
+
+
+```
+
 #### Correlation of Epithelial HLA-DR+ subsets and immune cells
-```{r echo=FALSE, fig.width = 5, fig.height = 2}
+```{r echo=FALSE, fig.width = 12, fig.height = 4}
 
 # Scatter plots
 ggpubr::ggscatter(prcnt_by_pt*100, x = 'Epi_8910', y = c("Myeloid", 'Tc_cells', 'Th_cells'),

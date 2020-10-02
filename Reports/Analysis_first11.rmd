@@ -12,7 +12,7 @@ output:
 library(ggplot2)
 library(RColorBrewer)
 knitr::opts_chunk$set(echo = TRUE)
-source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/clustering_f.R")
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/20_ClustAnnot_functions.R")
 ```
 
 ```{r, echo=FALSE}
@@ -20,23 +20,64 @@ source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/clust
 load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/woCD90/cellsubtypes.RData")
 ```
 
+```{r}
+annot_df <- annot_df[-which(annot_df$CANARY =='I'),]
+ref <- ref[-which(ref$CANARY =='I'),]
+```
+
+```{r}
+corr_pt <- Hmisc::rcorr(t(as.matrix(prcnt_by_pt)), type = 'spearman')
+dist_mat <- dist(corr_pt$r)
+hclust_avg <- hclust(dist_mat)
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1)
+```
 # All cells after denoising
 
 ## Major cell types
 
 ### Only major cell types
-```{r, echo=FALSE}
+
+```{r}
 prcnt_by_pt <- ClassAbundanceByPt(data=annot_df, ptID_col = 'pt_ID', 
     class_col = 'cell_type')
 rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
 
 levels(annot_df$cell_type)
 
-# Dendrogram and barplot
-dendrogram_barplot(prcnt_by_pt)
+# Dendrograms
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat, method = 'ward.D')
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1, main = 'Ward Linkage')
+
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat)
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1,  main = 'Complete Linkage')
+
+# Barplot
+coul = brewer.pal(9, "Set1")
+data <- prcnt_by_pt[hclust_avg$order,] #dendrogram order
+data <- t(as.matrix(data))
+
+par(mgp=c(1.5,0.25,0), las=1, mar = c(3, 5, 1, 7), xpd=TRUE, font.lab=2) # axis label locations
+barplot(data,
+        col=coul ,
+        border='white',
+        horiz=TRUE,
+        cex.names=0.75,
+        cex.axis = 0.75)
+title(xlab="Cell type (% of sample)", mgp = c(1.5, 0.5, 0))
+title(ylab="Patient ID",  mgp = c(3, 0.1, 0))
+legend('topright', legend = rownames(data), fill = coul, ncol = 1, inset=c(-0.25,0),
+           cex = 0.75)
+
 # Correlation plot
 corr_plot(prcnt_by_pt)
+
 ```
+
 
 
 ### Major cell types and immune subtypes and T cells as a group
@@ -47,8 +88,34 @@ rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
 
 levels(annot_df$subtype3)
 
-# Cluster dendrogram and barplot
-dendrogram_barplot(prcnt_by_pt)
+# Dendrograms
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat, method = 'ward.D')
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1, main = 'Ward Linkage')
+
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat)
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1,  main = 'Complete Linkage')
+
+# Barplot
+coul = brewer.pal(9, "Set1")
+data <- prcnt_by_pt[hclust_avg$order,] #dendrogram order
+data <- t(as.matrix(data))
+
+par(mgp=c(1.5,0.25,0), las=1, mar = c(3, 5, 1, 7), xpd=TRUE, font.lab=2) # axis label locations
+barplot(data,
+        col=coul ,
+        border='white',
+        horiz=TRUE,
+        cex.names=0.75,
+        cex.axis = 0.75)
+title(xlab="Cell type (% of sample)", mgp = c(1.5, 0.5, 0))
+title(ylab="Patient ID",  mgp = c(3, 0.1, 0))
+legend('topright', legend = rownames(data), fill = coul, ncol = 1, inset=c(-0.25,0),
+           cex = 0.75)
+
 # Correlation plot
 corr_plot(prcnt_by_pt)
 ```
@@ -63,8 +130,34 @@ rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
 
 levels(annot_df$subtype)
 
-# Cluster dendrogram and barplot
-dendrogram_barplot(prcnt_by_pt)
+# Dendrograms
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat, method = 'ward.D')
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1, main = 'Ward Linkage')
+
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat)
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1,  main = 'Complete Linkage')
+
+# Barplot
+coul = brewer.pal(9, "Set1")
+data <- prcnt_by_pt[hclust_avg$order,] #dendrogram order
+data <- t(as.matrix(data))
+
+par(mgp=c(1.5,0.25,0), las=1, mar = c(3, 5, 1, 7), xpd=TRUE, font.lab=2) # axis label locations
+barplot(data,
+        col=coul ,
+        border='white',
+        horiz=TRUE,
+        cex.names=0.75,
+        cex.axis = 0.75)
+title(xlab="Cell type (% of sample)", mgp = c(1.5, 0.5, 0))
+title(ylab="Patient ID",  mgp = c(3, 0.1, 0))
+legend('topright', legend = rownames(data), fill = coul, ncol = 1, inset=c(-0.25,0),
+           cex = 0.75)
+
 # Correlation plot
 corr_plot(prcnt_by_pt)
 ```
@@ -92,8 +185,34 @@ rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
 
 levels(annot_df$subtype2)
 
-# Cluster dendrogram and barplot
-dendrogram_barplot(prcnt_by_pt)
+# Dendrograms
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat, method = 'ward.D')
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1, main = 'Ward Linkage')
+
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat)
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1,  main = 'Complete Linkage')
+
+# Barplot
+coul = brewer.pal(9, "Set1")
+data <- prcnt_by_pt[hclust_avg$order,] #dendrogram order
+data <- t(as.matrix(data))
+
+par(mgp=c(1.5,0.25,0), las=1, mar = c(3, 5, 1, 7), xpd=TRUE, font.lab=2) # axis label locations
+barplot(data,
+        col=coul ,
+        border='white',
+        horiz=TRUE,
+        cex.names=0.75,
+        cex.axis = 0.75)
+title(xlab="Cell type (% of sample)", mgp = c(1.5, 0.5, 0))
+title(ylab="Patient ID",  mgp = c(3, 0.1, 0))
+legend('topright', legend = rownames(data), fill = coul, ncol = 1, inset=c(-0.25,0),
+           cex = 0.75)
+
 # Correlation plot
 corr_plot(prcnt_by_pt)
 ```
@@ -111,8 +230,34 @@ rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
 
 levels(sbst$subtype)
 
-# Cluster dendrogram and barplot
-dendrogram_barplot(prcnt_by_pt)
+# Dendrograms
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat, method = 'ward.D')
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1, main = 'Ward Linkage')
+
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat)
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1,  main = 'Complete Linkage')
+
+# Barplot
+coul = brewer.pal(9, "Set1")
+data <- prcnt_by_pt[hclust_avg$order,] #dendrogram order
+data <- t(as.matrix(data))
+
+par(mgp=c(1.5,0.25,0), las=1, mar = c(3, 5, 1, 7), xpd=TRUE, font.lab=2) # axis label locations
+barplot(data,
+        col=coul ,
+        border='white',
+        horiz=TRUE,
+        cex.names=0.75,
+        cex.axis = 0.75)
+title(xlab="Cell type (% of sample)", mgp = c(1.5, 0.5, 0))
+title(ylab="Patient ID",  mgp = c(3, 0.1, 0))
+legend('topright', legend = rownames(data), fill = coul, ncol = 1, inset=c(-0.25,0),
+           cex = 0.75)
+
 # Correlation plot
 corr_plot(prcnt_by_pt)
 
@@ -128,8 +273,34 @@ rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
 
 levels(sbst$subtype2)
 
-# Cluster dendrogram and barplot
-dendrogram_barplot(prcnt_by_pt)
+# Dendrograms
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat, method = 'ward.D')
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1, main = 'Ward Linkage')
+
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat)
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1,  main = 'Complete Linkage')
+
+# Barplot
+coul = brewer.pal(9, "Set1")
+data <- prcnt_by_pt[hclust_avg$order,] #dendrogram order
+data <- t(as.matrix(data))
+
+par(mgp=c(1.5,0.25,0), las=1, mar = c(3, 5, 1, 7), xpd=TRUE, font.lab=2) # axis label locations
+barplot(data,
+        col=coul ,
+        border='white',
+        horiz=TRUE,
+        cex.names=0.75,
+        cex.axis = 0.75)
+title(xlab="Cell type (% of sample)", mgp = c(1.5, 0.5, 0))
+title(ylab="Patient ID",  mgp = c(3, 0.1, 0))
+legend('topright', legend = rownames(data), fill = coul, ncol = 1, inset=c(-0.25,0),
+           cex = 0.75)
+
 # Correlation plot
 corr_plot(prcnt_by_pt)
 ```
@@ -147,8 +318,34 @@ rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
 
 levels(sbst$subtype)
 
-# Cluster dendrogram and barplot
-dendrogram_barplot(prcnt_by_pt)
+# Dendrograms
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat, method = 'ward.D')
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1, main = 'Ward Linkage')
+
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat)
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1,  main = 'Complete Linkage')
+
+# Barplot
+coul = brewer.pal(9, "Set1")
+data <- prcnt_by_pt[hclust_avg$order,] #dendrogram order
+data <- t(as.matrix(data))
+
+par(mgp=c(1.5,0.25,0), las=1, mar = c(3, 5, 1, 7), xpd=TRUE, font.lab=2) # axis label locations
+barplot(data,
+        col=coul ,
+        border='white',
+        horiz=TRUE,
+        cex.names=0.75,
+        cex.axis = 0.75)
+title(xlab="Cell type (% of sample)", mgp = c(1.5, 0.5, 0))
+title(ylab="Patient ID",  mgp = c(3, 0.1, 0))
+legend('topright', legend = rownames(data), fill = coul, ncol = 1, inset=c(-0.25,0),
+           cex = 0.75)
+
 # Correlation plot
 corr_plot(prcnt_by_pt)
 ```
@@ -168,8 +365,34 @@ rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
 
 levels(sbst$subtype)
 
-# Cluster dendrogram and barplot
-dendrogram_barplot(prcnt_by_pt)
+# Dendrograms
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat, method = 'ward.D')
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1, main = 'Ward Linkage')
+
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat)
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1,  main = 'Complete Linkage')
+
+# Barplot
+coul = brewer.pal(9, "Set1")
+data <- prcnt_by_pt[hclust_avg$order,] #dendrogram order
+data <- t(as.matrix(data))
+
+par(mgp=c(1.5,0.25,0), las=1, mar = c(3, 5, 1, 7), xpd=TRUE, font.lab=2) # axis label locations
+barplot(data,
+        col=coul ,
+        border='white',
+        horiz=TRUE,
+        cex.names=0.75,
+        cex.axis = 0.75)
+title(xlab="Cell type (% of sample)", mgp = c(1.5, 0.5, 0))
+title(ylab="Patient ID",  mgp = c(3, 0.1, 0))
+legend('topright', legend = rownames(data), fill = coul, ncol = 1, inset=c(-0.25,0),
+           cex = 0.75)
+
 # Correlation plot
 corr_plot(prcnt_by_pt)
 ```
@@ -188,8 +411,34 @@ rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
 
 levels(sbst$subtype2)
 
-# Cluster dendrogram and barplot
-dendrogram_barplot(prcnt_by_pt)
+# Dendrograms
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat, method = 'ward.D')
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1, main = 'Ward Linkage')
+
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat)
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1,  main = 'Complete Linkage')
+
+# Barplot
+coul = brewer.pal(9, "Set1")
+data <- prcnt_by_pt[hclust_avg$order,] #dendrogram order
+data <- t(as.matrix(data))
+
+par(mgp=c(1.5,0.25,0), las=1, mar = c(3, 5, 1, 7), xpd=TRUE, font.lab=2) # axis label locations
+barplot(data,
+        col=coul ,
+        border='white',
+        horiz=TRUE,
+        cex.names=0.75,
+        cex.axis = 0.75)
+title(xlab="Cell type (% of sample)", mgp = c(1.5, 0.5, 0))
+title(ylab="Patient ID",  mgp = c(3, 0.1, 0))
+legend('topright', legend = rownames(data), fill = coul, ncol = 1, inset=c(-0.25,0),
+           cex = 0.75)
+
 # Correlation plot
 corr_plot(prcnt_by_pt)
 ```
@@ -213,8 +462,34 @@ rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
 
 levels(rh_neg$cell_type)
 
-# Dendrogram and barplot
-dendrogram_barplot(prcnt_by_pt)
+# Dendrograms
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat, method = 'ward.D')
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1, main = 'Ward Linkage')
+
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat)
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1,  main = 'Complete Linkage')
+
+# Barplot
+coul = brewer.pal(9, "Set1")
+data <- prcnt_by_pt[hclust_avg$order,] #dendrogram order
+data <- t(as.matrix(data))
+
+par(mgp=c(1.5,0.25,0), las=1, mar = c(3, 5, 1, 7), xpd=TRUE, font.lab=2) # axis label locations
+barplot(data,
+        col=coul ,
+        border='white',
+        horiz=TRUE,
+        cex.names=0.75,
+        cex.axis = 0.75)
+title(xlab="Cell type (% of sample)", mgp = c(1.5, 0.5, 0))
+title(ylab="Patient ID",  mgp = c(3, 0.1, 0))
+legend('topright', legend = rownames(data), fill = coul, ncol = 1, inset=c(-0.25,0),
+           cex = 0.75)
+
 # Correlation plot
 corr_plot(prcnt_by_pt)
 ```
@@ -228,8 +503,34 @@ rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
 
 levels(rh_neg$subtype3)
 
-# Cluster dendrogram and barplot
-dendrogram_barplot(prcnt_by_pt)
+# Dendrograms
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat, method = 'ward.D')
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1, main = 'Ward Linkage')
+
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat)
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1,  main = 'Complete Linkage')
+
+# Barplot
+coul = brewer.pal(9, "Set1")
+data <- prcnt_by_pt[hclust_avg$order,] #dendrogram order
+data <- t(as.matrix(data))
+
+par(mgp=c(1.5,0.25,0), las=1, mar = c(3, 5, 1, 7), xpd=TRUE, font.lab=2) # axis label locations
+barplot(data,
+        col=coul ,
+        border='white',
+        horiz=TRUE,
+        cex.names=0.75,
+        cex.axis = 0.75)
+title(xlab="Cell type (% of sample)", mgp = c(1.5, 0.5, 0))
+title(ylab="Patient ID",  mgp = c(3, 0.1, 0))
+legend('topright', legend = rownames(data), fill = coul, ncol = 1, inset=c(-0.25,0),
+           cex = 0.75)
+
 # Correlation plot
 corr_plot(prcnt_by_pt)
 ```
@@ -244,8 +545,34 @@ rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
 
 levels(rh_neg$subtype)
 
-# Cluster dendrogram and barplot
-dendrogram_barplot(prcnt_by_pt)
+# Dendrograms
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat, method = 'ward.D')
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1, main = 'Ward Linkage')
+
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat)
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1,  main = 'Complete Linkage')
+
+# Barplot
+coul = brewer.pal(9, "Set1")
+data <- prcnt_by_pt[hclust_avg$order,] #dendrogram order
+data <- t(as.matrix(data))
+
+par(mgp=c(1.5,0.25,0), las=1, mar = c(3, 5, 1, 7), xpd=TRUE, font.lab=2) # axis label locations
+barplot(data,
+        col=coul ,
+        border='white',
+        horiz=TRUE,
+        cex.names=0.75,
+        cex.axis = 0.75)
+title(xlab="Cell type (% of sample)", mgp = c(1.5, 0.5, 0))
+title(ylab="Patient ID",  mgp = c(3, 0.1, 0))
+legend('topright', legend = rownames(data), fill = coul, ncol = 1, inset=c(-0.25,0),
+           cex = 0.75)
+
 # Correlation plot
 corr_plot(prcnt_by_pt)
 ```
@@ -258,8 +585,34 @@ rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
 
 levels(rh_neg$subtype2)
 
-# Cluster dendrogram and barplot
-dendrogram_barplot(prcnt_by_pt)
+# Dendrograms
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat, method = 'ward.D')
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1, main = 'Ward Linkage')
+
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat)
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1,  main = 'Complete Linkage')
+
+# Barplot
+coul = brewer.pal(9, "Set1")
+data <- prcnt_by_pt[hclust_avg$order,] #dendrogram order
+data <- t(as.matrix(data))
+
+par(mgp=c(1.5,0.25,0), las=1, mar = c(3, 5, 1, 7), xpd=TRUE, font.lab=2) # axis label locations
+barplot(data,
+        col=coul ,
+        border='white',
+        horiz=TRUE,
+        cex.names=0.75,
+        cex.axis = 0.75)
+title(xlab="Cell type (% of sample)", mgp = c(1.5, 0.5, 0))
+title(ylab="Patient ID",  mgp = c(3, 0.1, 0))
+legend('topright', legend = rownames(data), fill = coul, ncol = 1, inset=c(-0.25,0),
+           cex = 0.75)
+
 # Correlation plot
 corr_plot(prcnt_by_pt)
 ```
@@ -277,8 +630,34 @@ rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
 
 levels(sbst$subtype)
 
-# Cluster dendrogram and barplot
-dendrogram_barplot(prcnt_by_pt)
+# Dendrograms
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat, method = 'ward.D')
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1, main = 'Ward Linkage')
+
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat)
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1,  main = 'Complete Linkage')
+
+# Barplot
+coul = brewer.pal(9, "Set1")
+data <- prcnt_by_pt[hclust_avg$order,] #dendrogram order
+data <- t(as.matrix(data))
+
+par(mgp=c(1.5,0.25,0), las=1, mar = c(3, 5, 1, 7), xpd=TRUE, font.lab=2) # axis label locations
+barplot(data,
+        col=coul ,
+        border='white',
+        horiz=TRUE,
+        cex.names=0.75,
+        cex.axis = 0.75)
+title(xlab="Cell type (% of sample)", mgp = c(1.5, 0.5, 0))
+title(ylab="Patient ID",  mgp = c(3, 0.1, 0))
+legend('topright', legend = rownames(data), fill = coul, ncol = 1, inset=c(-0.25,0),
+           cex = 0.75)
+
 # Correlation plot
 corr_plot(prcnt_by_pt)
 
@@ -294,8 +673,34 @@ rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
 
 levels(sbst$subtype2)
 
-# Cluster dendrogram and barplot
-dendrogram_barplot(prcnt_by_pt)
+# Dendrograms
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat, method = 'ward.D')
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1, main = 'Ward Linkage')
+
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat)
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1,  main = 'Complete Linkage')
+
+# Barplot
+coul = brewer.pal(9, "Set1")
+data <- prcnt_by_pt[hclust_avg$order,] #dendrogram order
+data <- t(as.matrix(data))
+
+par(mgp=c(1.5,0.25,0), las=1, mar = c(3, 5, 1, 7), xpd=TRUE, font.lab=2) # axis label locations
+barplot(data,
+        col=coul ,
+        border='white',
+        horiz=TRUE,
+        cex.names=0.75,
+        cex.axis = 0.75)
+title(xlab="Cell type (% of sample)", mgp = c(1.5, 0.5, 0))
+title(ylab="Patient ID",  mgp = c(3, 0.1, 0))
+legend('topright', legend = rownames(data), fill = coul, ncol = 1, inset=c(-0.25,0),
+           cex = 0.75)
+
 # Correlation plot
 corr_plot(prcnt_by_pt)
 ```
@@ -313,8 +718,34 @@ rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
 
 levels(sbst$subtype)
 
-# Cluster dendrogram and barplot
-dendrogram_barplot(prcnt_by_pt)
+# Dendrograms
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat, method = 'ward.D')
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1, main = 'Ward Linkage')
+
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat)
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1,  main = 'Complete Linkage')
+
+# Barplot
+coul = brewer.pal(9, "Set1")
+data <- prcnt_by_pt[hclust_avg$order,] #dendrogram order
+data <- t(as.matrix(data))
+
+par(mgp=c(1.5,0.25,0), las=1, mar = c(3, 5, 1, 7), xpd=TRUE, font.lab=2) # axis label locations
+barplot(data,
+        col=coul ,
+        border='white',
+        horiz=TRUE,
+        cex.names=0.75,
+        cex.axis = 0.75)
+title(xlab="Cell type (% of sample)", mgp = c(1.5, 0.5, 0))
+title(ylab="Patient ID",  mgp = c(3, 0.1, 0))
+legend('topright', legend = rownames(data), fill = coul, ncol = 1, inset=c(-0.25,0),
+           cex = 0.75)
+
 # Correlation plot
 corr_plot(prcnt_by_pt)
 ```
@@ -334,8 +765,34 @@ rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
 
 levels(sbst$subtype)
 
-# Cluster dendrogram and barplot
-dendrogram_barplot(prcnt_by_pt)
+# Dendrograms
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat, method = 'ward.D')
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1, main = 'Ward Linkage')
+
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat)
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1,  main = 'Complete Linkage')
+
+# Barplot
+coul = brewer.pal(9, "Set1")
+data <- prcnt_by_pt[hclust_avg$order,] #dendrogram order
+data <- t(as.matrix(data))
+
+par(mgp=c(1.5,0.25,0), las=1, mar = c(3, 5, 1, 7), xpd=TRUE, font.lab=2) # axis label locations
+barplot(data,
+        col=coul ,
+        border='white',
+        horiz=TRUE,
+        cex.names=0.75,
+        cex.axis = 0.75)
+title(xlab="Cell type (% of sample)", mgp = c(1.5, 0.5, 0))
+title(ylab="Patient ID",  mgp = c(3, 0.1, 0))
+legend('topright', legend = rownames(data), fill = coul, ncol = 1, inset=c(-0.25,0),
+           cex = 0.75)
+
 # Correlation plot
 corr_plot(prcnt_by_pt)
 ```
@@ -354,8 +811,34 @@ rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
 
 levels(sbst$subtype2)
 
-# Cluster dendrogram and barplot
-dendrogram_barplot(prcnt_by_pt)
+# Dendrograms
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat, method = 'ward.D')
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1, main = 'Ward Linkage')
+
+dist_mat <- dist(prcnt_by_pt)
+hclust_avg <- hclust(dist_mat)
+par(mar=c(2,7,4,2), lwd=2)
+plot(hclust_avg,cex = 0.8, hang = -1,  main = 'Complete Linkage')
+
+# Barplot
+coul = brewer.pal(9, "Set1")
+data <- prcnt_by_pt[hclust_avg$order,] #dendrogram order
+data <- t(as.matrix(data))
+
+par(mgp=c(1.5,0.25,0), las=1, mar = c(3, 5, 1, 7), xpd=TRUE, font.lab=2) # axis label locations
+barplot(data,
+        col=coul ,
+        border='white',
+        horiz=TRUE,
+        cex.names=0.75,
+        cex.axis = 0.75)
+title(xlab="Cell type (% of sample)", mgp = c(1.5, 0.5, 0))
+title(ylab="Patient ID",  mgp = c(3, 0.1, 0))
+legend('topright', legend = rownames(data), fill = coul, ncol = 1, inset=c(-0.25,0),
+           cex = 0.75)
+
 # Correlation plot
 corr_plot(prcnt_by_pt)
 ```

@@ -1,0 +1,193 @@
+---
+title: "Analysis complete set of samples"
+author: "Mafe Senosain"
+date: "1/30/2020"
+output:
+    html_document:
+        toc: true
+        toc_float: true
+---
+
+```{r setup, include=FALSE}
+library(ggplot2)
+library(RColorBrewer)
+knitr::opts_chunk$set(echo = FALSE)
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/ClustAnnot_functions.R")
+```
+
+```{r, echo=FALSE}
+# Load data
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/cellsubtypes.RData")
+```
+
+```{r, echo=FALSE}
+# Organizing data
+
+# All cell/sub types B have Fib_Mesenchymal
+ref <- ref[-42,] # sample 13376 has been collected twice and will be merged, only one ref is needed
+grp <- 'B'
+```
+
+## Major cell types
+
+### Only major cell types
+```{r, echo=FALSE}
+prcnt_by_pt <- ClassAbundanceByPt(data=annot_df, ptID_col = 'pt_ID', 
+    class_col = paste0('cell_type_', grp))
+rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
+
+# Correlation plot
+corr_plot(prcnt_by_pt)
+```
+
+
+### Major cell types and immune subtypes and T cells as a group
+```{r, echo=FALSE}
+prcnt_by_pt <- ClassAbundanceByPt(data=annot_df, ptID_col = 'pt_ID', 
+    class_col = paste0('subtype_', grp, '3'))
+rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
+
+levels(annot_df[,paste0('subtype_', grp, '3')])
+
+# Cluster dendrogram and barplot
+dendrogram_barplot(prcnt_by_pt)
+# Correlation plot
+corr_plot(prcnt_by_pt)
+```
+
+## Subtypes
+
+### All subtypes
+```{r, echo=FALSE}
+prcnt_by_pt <- ClassAbundanceByPt(data=annot_df, ptID_col = 'pt_ID', 
+    class_col = paste0('subtype_', grp))
+rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
+
+levels(annot_df[,paste0('subtype_', grp)])
+
+# Cluster dendrogram and barplot
+dendrogram_barplot(prcnt_by_pt)
+# Correlation plot
+corr_plot(prcnt_by_pt)
+```
+
+```{r echo=FALSE, fig.width = 5, fig.height = 2}
+# Scatter plots
+ggpubr::ggscatter(prcnt_by_pt, x = "Th_cells", y = c('Epithelial_8', 'Epithelial_9', 'Epithelial_10'),
+          add = "reg.line", conf.int = TRUE, combine = TRUE,
+          cor.coef = TRUE, cor.method = "spearman", add.params = list(color = '#FF6BBC'),
+          xlab = "CD4+ T cells", ylab = '')
+ggpubr::ggscatter(prcnt_by_pt, x = "Tc_cells", y = c('Epithelial_8', 'Epithelial_9', 'Epithelial_10'),
+          add = "reg.line", conf.int = TRUE, combine = TRUE,
+          cor.coef = TRUE, cor.method = "spearman", add.params = list(color = '#FF7500'),
+          xlab = "CD8+ T cells", ylab = '')
+    
+epi_path <- '/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/figs/heatmap_epi_kmeans.png'
+knitr::include_graphics(epi_path)
+```
+
+### Subtypes (T cells as one group)
+```{r, echo=FALSE}
+prcnt_by_pt <- ClassAbundanceByPt(data=annot_df, ptID_col = 'pt_ID', 
+    class_col = paste0('subtype_', grp, '2'))
+rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
+
+levels(annot_df[,paste0('subtype_', grp, '2')])
+
+# Cluster dendrogram and barplot
+dendrogram_barplot(prcnt_by_pt)
+# Correlation plot
+corr_plot(prcnt_by_pt)
+```
+
+
+## Only Immune
+
+### All subtypes
+```{r, echo=FALSE}
+sbst <- subset(annot_df, cell_type_A == 'Immune')
+sbst$subtype_A <- factor(sbst$subtype_A)
+prcnt_by_pt <- ClassAbundanceByPt(data=sbst, ptID_col = 'pt_ID', 
+    class_col = 'subtype_A')
+rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
+
+levels(sbst$subtype_A)
+
+# Cluster dendrogram and barplot
+dendrogram_barplot(prcnt_by_pt)
+# Correlation plot
+corr_plot(prcnt_by_pt)
+
+```
+
+### Subtypes (T cells as one group)
+```{r, echo=FALSE}
+sbst <- subset(annot_df, cell_type_A == 'Immune')
+sbst$subtype_A2 <- factor(sbst$subtype_A2)
+prcnt_by_pt <- ClassAbundanceByPt(data=sbst, ptID_col = 'pt_ID', 
+    class_col = 'subtype_A2')
+rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
+
+levels(sbst$subtype_A2)
+
+# Cluster dendrogram and barplot
+dendrogram_barplot(prcnt_by_pt)
+# Correlation plot
+corr_plot(prcnt_by_pt)
+```
+
+
+## Only Epithelial
+
+### All Epithelial subtypes
+```{r, echo=FALSE}
+sbst <- subset(annot_df, cell_type_A == 'Epithelial')
+sbst$subtype_A <- factor(sbst$subtype_A)
+prcnt_by_pt <- ClassAbundanceByPt(data=sbst, ptID_col = 'pt_ID', 
+    class_col = 'subtype_A')
+rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
+
+levels(sbst$subtype_A)
+
+# Cluster dendrogram and barplot
+dendrogram_barplot(prcnt_by_pt)
+# Correlation plot
+corr_plot(prcnt_by_pt)
+```
+
+## Stromal cells only
+
+### All subtypes
+```{r, echo=FALSE}
+sbst <- subset(annot_df, cell_type_A != 'Epithelial')
+sbst[,paste0('subtype_', grp)] <- factor(sbst[,paste0('subtype_', grp)])
+prcnt_by_pt <- ClassAbundanceByPt(data=sbst, ptID_col = 'pt_ID', 
+    class_col = paste0('subtype_', grp))
+rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
+
+levels(sbst[,paste0('subtype_', grp)])
+
+
+# Cluster dendrogram and barplot
+dendrogram_barplot(prcnt_by_pt)
+# Correlation plot
+corr_plot(prcnt_by_pt)
+```
+
+
+### Subtypes (T cells as one group)
+```{r, echo=FALSE}
+sbst <- subset(annot_df, cell_type_A != 'Epithelial')
+sbst[,paste0('subtype_', grp, '2')] <- factor(sbst[,paste0('subtype_', grp, '2')])
+prcnt_by_pt <- ClassAbundanceByPt(data=sbst, ptID_col = 'pt_ID', 
+    class_col = paste0('subtype_', grp, '2'))
+rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
+
+levels(sbst[,paste0('subtype_', grp, '2')])
+
+# Cluster dendrogram and barplot
+dendrogram_barplot(prcnt_by_pt)
+# Correlation plot
+corr_plot(prcnt_by_pt)
+```
+

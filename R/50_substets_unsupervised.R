@@ -623,6 +623,7 @@ corrplot::corrplot(res$r, type="upper", order='original', tl.col = "black",
 
 
 ###########################################################################################################
+# By patient
 
 load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/subsets/subset_exprmat_clinical_annotations.RData")
 
@@ -701,4 +702,38 @@ Heatmap(corrmat$r, name = "mat", row_km = 2, column_km = 2,
 
     Hist_pred = as.factor(pData_cytof$Hist_predominant),
     Hist_sec = as.factor(pData_cytof$Hist_other_patterns),
+
+
+
+###########################################################################################################
+# By protein
+
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/subsets/subset_exprmat_clinical_annotations.RData")
+
+library(Hmisc)
+library(corrplot)
+library(ComplexHeatmap)
+library(RColorBrewer)
+library(circlize)
+
+data <- sbst_exp
+
+excl_i <- grep("*EpCAM*|*Cytokeratin*|*CK7*|*CD31*|*CD45*|*CD56*|*CD8*|*CD3*|*CD11b*|*CD90*|*CD4*|*Vimentin|*TP63*", colnames(sbst_exp))
+
+data <- data[,-excl_i]
+
+# sbst_exp$pt_ID == pData_cytof$pt_ID should be TRUE for all
+
+rownames(data) <- data$pt_ID
+data$pt_ID <- NULL
+data$CANARY <- NULL
+
+corrmat <- rcorr(as.matrix(data))
+
+
+set.seed(45)
+Heatmap(corrmat$r, name = "mat", row_km = 2, column_km = 2,
+  heatmap_legend_param = list(color_bar = "continuous"), 
+  row_names_gp = gpar(fontsize = 8),
+  column_names_gp = gpar(fontsize = 8))#, right_annotation = ha)
 

@@ -1,7 +1,7 @@
 ---
 title: "Analysis complete set of samples"
 author: "Mafe Senosain"
-date: "1/30/2020"
+date: "`r Sys.Date()`"
 output:
     html_document:
         toc: true
@@ -12,7 +12,7 @@ output:
 library(ggplot2)
 library(RColorBrewer)
 knitr::opts_chunk$set(echo = FALSE)
-source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/clustering_f.R")
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/20_ClustAnnot_functions.R")
 ```
 
 ```{r, echo=FALSE}
@@ -39,6 +39,8 @@ rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
 levels(annot_df[,paste0('cell_type_', grp)])
 
 # Dendrogram and barplot
+par(mar=c(3.5,6,1,2))
+par(mgp=c(3,0.5,0))
 dendrogram_barplot(prcnt_by_pt)
 # Correlation plot
 corr_plot(prcnt_by_pt)
@@ -54,6 +56,8 @@ rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
 levels(annot_df[,paste0('subtype_', grp, '3')])
 
 # Cluster dendrogram and barplot
+par(mar=c(3.5,6,1,2))
+par(mgp=c(3,0.5,0))
 dendrogram_barplot(prcnt_by_pt)
 # Correlation plot
 corr_plot(prcnt_by_pt)
@@ -70,21 +74,81 @@ rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
 levels(annot_df[,paste0('subtype_', grp)])
 
 # Cluster dendrogram and barplot
+par(mar=c(3.5,6,1,2))
+par(mgp=c(3,0.5,0))
 dendrogram_barplot(prcnt_by_pt)
 # Correlation plot
 corr_plot(prcnt_by_pt)
 ```
 
+
 ```{r echo=FALSE, fig.width = 5, fig.height = 2}
 # Scatter plots
-ggpubr::ggscatter(prcnt_by_pt, x = "Th_cells", y = c('Epithelial_8', 'Epithelial_9', 'Epithelial_10'),
+ggpubr::ggscatter(prcnt_by_pt*100, x = "Myeloid", y = c('Epithelial_8', 'Epithelial_9', 'Epithelial_10'),
           add = "reg.line", conf.int = TRUE, combine = TRUE,
-          cor.coef = TRUE, cor.method = "spearman", add.params = list(color = '#FF6BBC'),
-          xlab = "CD4+ T cells", ylab = '')
-ggpubr::ggscatter(prcnt_by_pt, x = "Tc_cells", y = c('Epithelial_8', 'Epithelial_9', 'Epithelial_10'),
+          cor.coef = TRUE, cor.method = "spearman", add.params = list(color = 'grey'),
+          xlab = "Myeloid cells", ylab = 'Relative abundance (%)')
+ggpubr::ggscatter(prcnt_by_pt*100, x = "Tc_cells", y = c('Epithelial_8', 'Epithelial_9', 'Epithelial_10'),
           add = "reg.line", conf.int = TRUE, combine = TRUE,
-          cor.coef = TRUE, cor.method = "spearman", add.params = list(color = '#FF7500'),
-          xlab = "CD8+ T cells", ylab = '')
+          cor.coef = TRUE, cor.method = "spearman", add.params = list(color = 'grey'),
+          xlab = "CD8+ T cells", ylab = 'Relative abundance (%)')
+
+ggpubr::ggscatter(prcnt_by_pt*100, x = "Th_cells", y = c('Epithelial_8','Epithelial_9', 'Epithelial_10'),
+          add = "reg.line", conf.int = TRUE, combine = TRUE,
+          cor.coef = TRUE, cor.method = "spearman", add.params = list(color = 'grey'),
+          xlab = "CD4+ T cells", ylab = 'Relative abundance (%)')
+    
+```
+
+```{r}
+prcnt_by_pt['CANARY'] <- ref$CANARY
+library(dplyr)
+
+prcnt_G <- prcnt_by_pt %>% 
+  filter(., CANARY == 'G')
+
+prcnt_P <- prcnt_by_pt %>% 
+  filter(., CANARY == 'P')
+
+```
+
+```{r echo=FALSE, fig.width = 5, fig.height = 2}
+# Scatter plots
+ggpubr::ggscatter(prcnt_G*100, x = "Myeloid", y = c('Epithelial_8', 'Epithelial_9', 'Epithelial_10'),
+          add = "reg.line", conf.int = TRUE, combine = TRUE,
+          cor.coef = TRUE, cor.method = "spearman", add.params = list(color = 'grey'),
+          xlab = "Myeloid cells", ylab = 'Relative abundance (%)')
+ggpubr::ggscatter(prcnt_G*100, x = "Tc_cells", y = c('Epithelial_8', 'Epithelial_9', 'Epithelial_10'),
+          add = "reg.line", conf.int = TRUE, combine = TRUE,
+          cor.coef = TRUE, cor.method = "spearman", add.params = list(color = 'grey'),
+          xlab = "CD8+ T cells", ylab = 'Relative abundance (%)')
+
+ggpubr::ggscatter(prcnt_G*100, x = "Th_cells", y = c('Epithelial_8','Epithelial_9', 'Epithelial_10'),
+          add = "reg.line", conf.int = TRUE, combine = TRUE,
+          cor.coef = TRUE, cor.method = "spearman", add.params = list(color = 'grey'),
+          xlab = "CD4+ T cells", ylab = 'Relative abundance (%)')
+    
+```
+
+```{r echo=FALSE, fig.width = 5, fig.height = 2}
+# Scatter plots
+ggpubr::ggscatter(prcnt_P*100, x = "Myeloid", y = c('Epithelial_8', 'Epithelial_9', 'Epithelial_10'),
+          add = "reg.line", conf.int = TRUE, combine = TRUE,
+          cor.coef = TRUE, cor.method = "spearman", add.params = list(color = 'grey'),
+          xlab = "Myeloid cells", ylab = 'Relative abundance (%)')
+ggpubr::ggscatter(prcnt_P*100, x = "Tc_cells", y = c('Epithelial_8', 'Epithelial_9', 'Epithelial_10'),
+          add = "reg.line", conf.int = TRUE, combine = TRUE,
+          cor.coef = TRUE, cor.method = "spearman", add.params = list(color = 'grey'),
+          xlab = "CD8+ T cells", ylab = 'Relative abundance (%)')
+
+ggpubr::ggscatter(prcnt_P*100, x = "Th_cells", y = c('Epithelial_8','Epithelial_9', 'Epithelial_10'),
+          add = "reg.line", conf.int = TRUE, combine = TRUE,
+          cor.coef = TRUE, cor.method = "spearman", add.params = list(color = 'grey'),
+          xlab = "CD4+ T cells", ylab = 'Relative abundance (%)')
+    
+```
+
+```{r echo=FALSE, fig.width = 5, fig.height = 2}
     
 epi_path <- '/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/figs/heatmap_epi_kmeans.png'
 knitr::include_graphics(epi_path)
@@ -99,6 +163,8 @@ rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
 levels(annot_df[,paste0('subtype_', grp, '2')])
 
 # Cluster dendrogram and barplot
+par(mar=c(3.5,6,1,2))
+par(mgp=c(3,0.5,0))
 dendrogram_barplot(prcnt_by_pt)
 # Correlation plot
 corr_plot(prcnt_by_pt)
@@ -118,6 +184,8 @@ rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
 levels(sbst$subtype_A)
 
 # Cluster dendrogram and barplot
+par(mar=c(3.5,6,1,2))
+par(mgp=c(3,0.5,0))
 dendrogram_barplot(prcnt_by_pt)
 # Correlation plot
 corr_plot(prcnt_by_pt)
@@ -135,6 +203,8 @@ rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
 levels(sbst$subtype_A2)
 
 # Cluster dendrogram and barplot
+par(mar=c(3.5,6,1,2))
+par(mgp=c(3,0.5,0))
 dendrogram_barplot(prcnt_by_pt)
 # Correlation plot
 corr_plot(prcnt_by_pt)
@@ -154,6 +224,8 @@ rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
 levels(sbst$subtype_A)
 
 # Cluster dendrogram and barplot
+par(mar=c(3.5,6,1,2))
+par(mgp=c(3,0.5,0))
 dendrogram_barplot(prcnt_by_pt)
 # Correlation plot
 corr_plot(prcnt_by_pt)
@@ -173,6 +245,8 @@ levels(sbst[,paste0('subtype_', grp)])
 
 
 # Cluster dendrogram and barplot
+par(mar=c(3.5,6,1,2))
+par(mgp=c(3,0.5,0))
 dendrogram_barplot(prcnt_by_pt)
 # Correlation plot
 corr_plot(prcnt_by_pt)
@@ -190,8 +264,18 @@ rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
 levels(sbst[,paste0('subtype_', grp, '2')])
 
 # Cluster dendrogram and barplot
+par(mar=c(3.5,6,1,2))
+par(mgp=c(3,0.5,0))
 dendrogram_barplot(prcnt_by_pt)
 # Correlation plot
 corr_plot(prcnt_by_pt)
+```
+
+```{r}
+# Scatter plots
+ggpubr::ggscatter(prcnt_by_pt*100, x = "Fib_Mesenchymal", y = 'T_cells',
+          add = "reg.line", conf.int = TRUE, combine = TRUE,
+          cor.coef = TRUE, cor.method = "spearman", add.params = list(color = 'grey'),
+          xlab = "Fibroblasts/Mesenchymal cells(%)", ylab = 'T cells (%)')
 ```
 

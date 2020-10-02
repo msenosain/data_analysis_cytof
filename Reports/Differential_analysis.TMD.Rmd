@@ -1,0 +1,219 @@
+---
+title: "Differential Analysis for TMA36 (extreme groups)"
+author: "Mafe Senosain"
+date: "`r Sys.Date()`"
+output:
+    html_document:
+        toc: true
+        toc_float: true
+---
+
+```{r setup, include=FALSE}
+library(ggplot2)
+library(gplots)
+library(RColorBrewer)
+library(pheatmap)
+knitr::opts_chunk$set(echo = FALSE)
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/DA_functions.R")
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/ClustAnnot_functions.R")
+```
+
+```{r, echo=FALSE}
+# Load data
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/cellsubtypes.RData")
+```
+
+# All cell types
+
+## Major cell types
+```{r, echo=FALSE}
+x <- DA_analysis(annot_df, ref, class_col='cell_type_B', group_levels=c('G','P'),
+     group_col = 'CANARY', ptID_col = 'pt_ID')
+
+x$pvals
+
+pheatmap(x$RA_clrt, cluster_cols = T, cluster_rows = F, annotation_row = x$ref_t, 
+    gaps_row = c(7), cellheight = 5, cellwidth = 20)
+```
+
+## All subtypes
+```{r, echo=FALSE}
+x <- DA_analysis(annot_df, ref, class_col='subtype_B', group_levels=c('G','P'),
+     group_col = 'CANARY', ptID_col = 'pt_ID')
+
+x$pvals
+
+pheatmap(x$RA_clrt, cluster_cols = T, cluster_rows = F, annotation_row = x$ref_t, 
+    gaps_row = c(7), cellheight = 5, cellwidth = 20)
+```
+
+```{r}
+prcnt <- x$RA_raw*100
+prcnt['CANARY'] <- c(rep('G', 7), rep('P', 47))
+#prcnt <- reshape::melt(prcnt)
+
+ggplot(prcnt, aes(x=CANARY, y=Epithelial_7, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,20)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  #facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22))
+
+
+```
+
+## All subtypes (T cells as one)
+```{r, echo=FALSE}
+x <- DA_analysis(annot_df, ref, class_col='subtype_B2', group_levels=c('G','P'),
+     group_col = 'CANARY', ptID_col = 'pt_ID')
+
+x$pvals
+
+pheatmap(x$RA_clrt, cluster_cols = T, cluster_rows = F, annotation_row = x$ref_t, 
+    gaps_row = c(7), cellheight = 5, cellwidth = 20)
+```
+
+## All subtypes (T cells as one, epi as one)
+```{r, echo=FALSE}
+x <- DA_analysis(annot_df, ref, class_col='subtype_B3', group_levels=c('G','P'),
+     group_col = 'CANARY', ptID_col = 'pt_ID')
+
+x$pvals
+
+pheatmap(x$RA_clrt, cluster_cols = T, cluster_rows = F, annotation_row = x$ref_t, 
+    gaps_row = c(7), cellheight = 5, cellwidth = 20)
+```
+
+
+# Immune cells only
+
+## All immune subtypes
+```{r, echo=FALSE}
+k <- which(annot_df$cell_type_B == 'Immune')
+sbst <- annot_df[k,]
+sbst$subtype_B <- factor(sbst$subtype_B)
+sbst$subtype_B2 <- factor(sbst$subtype_B2)
+
+x <- DA_analysis(sbst, ref, class_col='subtype_B', group_levels=c('G','P'),
+     group_col = 'CANARY', ptID_col = 'pt_ID')
+
+x$pvals
+
+pheatmap(x$RA_clrt, cluster_cols = T, cluster_rows = F, annotation_row = x$ref_t, 
+    gaps_row = c(7), cellheight = 5, cellwidth = 20)
+```
+
+## T cells as one
+```{r, echo=FALSE}
+x <- DA_analysis(sbst, ref, class_col='subtype_B2', group_levels=c('G','P'),
+     group_col = 'CANARY', ptID_col = 'pt_ID')
+
+x$pvals
+
+pheatmap(x$RA_clrt, cluster_cols = T, cluster_rows = F, annotation_row = x$ref_t, 
+    gaps_row = c(7), cellheight = 5, cellwidth = 20)
+```
+
+
+# Stromal cells only
+
+## All subtypes
+```{r, echo=FALSE}
+k <- which(annot_df$cell_type_B == 'Epithelial')
+sbst <- annot_df[-k,]
+sbst$subtype_B <- factor(sbst$subtype_B)
+sbst$subtype_B2 <- factor(sbst$subtype_B2)
+
+x <- DA_analysis(sbst, ref, class_col='subtype_B', group_levels=c('G','P'),
+     group_col = 'CANARY', ptID_col = 'pt_ID')
+
+x$pvals
+
+pheatmap(x$RA_clrt, cluster_cols = T, cluster_rows = F, annotation_row = x$ref_t, 
+    gaps_row = c(7), cellheight = 5, cellwidth = 20)
+```
+
+## T cells as one
+```{r, echo=FALSE}
+x <- DA_analysis(sbst, ref, class_col='subtype_B2', group_levels=c('G','P'),
+     group_col = 'CANARY', ptID_col = 'pt_ID')
+
+x$pvals
+
+pheatmap(x$RA_clrt, cluster_cols = T, cluster_rows = F, annotation_row = x$ref_t, 
+    gaps_row = c(7), cellheight = 5, cellwidth = 20)
+```
+
+
+# Epithelial cells only
+
+## All epithelial clusters
+```{r, echo=FALSE}
+k <- which(annot_df$cell_type_B == 'Epithelial')
+sbst <- annot_df[k,]
+sbst$subtype_B <- factor(sbst$subtype_B)
+
+x <- DA_analysis(sbst, ref, class_col='subtype_B', group_levels=c('G','P'),
+     group_col = 'CANARY', ptID_col = 'pt_ID')
+
+x$pvals
+
+draw_colnames_45 <- function (coln, gaps, ...) {
+    coord <- pheatmap:::find_coordinates(length(coln), gaps)
+    x     <- coord$coord - 0.5 * coord$size
+    res   <- grid::textGrob(
+      coln, x = x, y = unit(1, "npc") - unit(3,"bigpts"),
+      vjust = 0.75, hjust = 1, rot = 45, gp = grid::gpar(...)
+    )
+    return(res)
+}
+assignInNamespace(
+  x = "draw_colnames",
+  value = "draw_colnames_45",
+  ns = asNamespace("pheatmap")
+)
+
+pheatmap(x$RA_clrt, cluster_cols = T, cluster_rows = F, annotation_row = x$ref_t, 
+    gaps_row = c(7), cellheight = 5, cellwidth = 20)
+```
+
+
+```{r, echo=FALSE}
+# k <- which(annot_df$cell_type_B == 'Epithelial')
+# sbst <- annot_df[k,]
+# sbst$subtype_B <- factor(sbst$subtype_B)
+# 
+# x <- DA_analysis(sbst, ref, class_col='subtype_B', group_levels=c('G','P'),
+#      group_col = 'CANARY', ptID_col = 'pt_ID')
+# 
+# x$pvals
+# 
+# quantile_breaks <- function(xs, n = 10) {
+#   breaks <- quantile(xs, probs = seq(0, 1, length.out = n))
+#   breaks[!duplicated(breaks)]
+# }
+# 
+# mat_breaks <- quantile_breaks(x$RA_clrt, n = 11)
+# 
+# 
+# draw_colnames_45 <- function (coln, gaps, ...) {
+#     coord <- pheatmap:::find_coordinates(length(coln), gaps)
+#     x     <- coord$coord - 0.5 * coord$size
+#     res   <- grid::textGrob(
+#       coln, x = x, y = unit(1, "npc") - unit(3,"bigpts"),
+#       vjust = 0.75, hjust = 1, rot = 45, gp = grid::gpar(...)
+#     )
+#     return(res)
+# }
+# assignInNamespace(
+#   x = "draw_colnames",
+#   value = "draw_colnames_45",
+#   ns = asNamespace("pheatmap")
+# )
+# 
+# 
+# pheatmap(x$RA_clrt, cluster_cols = T, cluster_rows = F, annotation_row = x$ref_t, 
+#     gaps_row = c(7), cellheight = 5, cellwidth = 20, 
+#     color = viridis::inferno((length(mat_breaks) - 1)), breaks = mat_breaks)
+```

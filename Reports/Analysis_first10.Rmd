@@ -1,0 +1,757 @@
+---
+title: "Analysis of first 11 tumors"
+author: "Mafe Senosain"
+date: "1/24/2020"
+output:
+    html_document:
+        toc: true
+        toc_float: true
+---
+
+```{r setup, include=FALSE}
+library(ggplot2)
+library(RColorBrewer)
+knitr::opts_chunk$set(echo = TRUE)
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/20_ClustAnnot_functions.R")
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/30_DA_functions.R")
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/40_DE_functions.R")
+```
+
+```{r, echo=FALSE}
+# Load data
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/woCD90/cellsubtypes.RData")
+```
+
+```{r}
+annot_df <- annot_df[-which(annot_df$CANARY =='I'),]
+ref <- ref[-which(ref$CANARY =='I'),]
+annot_df['subtype4'] <- as.character(annot_df$subtype)
+annot_df[which(annot_df$cell_type=='Epithelial'), 'subtype4'] <- 'Epithelial'
+annot_df$subtype4 <- as.factor(annot_df$subtype4)
+```
+
+
+```{r}
+dendrogram_barplot <- function(data, dist_method = 'euclidean', 
+    hclust_method = 'ward.D', corr_mat = FALSE){
+    
+    # Dendrogram
+    if(corr_mat){
+        corr_pt <- Hmisc::rcorr(t(as.matrix(data)), type = 'spearman')
+        dist_mat <- dist(corr_pt$r, method = dist_method)
+    } else {
+        dist_mat <- dist(data, method = dist_method)
+    }
+    hclust_avg <- hclust(dist_mat, method = hclust_method)
+    par(mar=c(2,7,4,2), lwd=2, mgp=c(3,1,0), las=1, font.lab=2)
+    plot(hclust_avg,cex = 0.8, hang = -1, main = paste0(hclust_method, ' linkage'))
+    
+    # Barplot
+    coul = brewer.pal(9, "Set1")
+    data <- data[hclust_avg$order,] #dendrogram order
+    data <- t(as.matrix(data))
+    
+    par(mgp=c(1.5,0.25,0), las=1, mar = c(3, 5, 1, 7.5), xpd=TRUE, font.lab=2, lwd=1) # axis label locations
+    barplot(data,
+            col=coul ,
+            border='white',
+            horiz=TRUE,
+            cex.names=0.75,
+            cex.axis = 0.75)
+    title(xlab="Cell type (% of sample)", mgp = c(1.5, 0.5, 0))
+    title(ylab="Patient ID",  mgp = c(3, 0.1, 0))
+    legend('topright', legend = rownames(data), fill = coul, ncol = 1, inset=c(-0.3,0),
+               cex = 0.75)
+
+}
+
+```
+
+# All cells after denoising
+
+## Major cell types
+
+### Only major cell types
+
+```{r}
+prcnt_by_pt <- ClassAbundanceByPt(data=annot_df, ptID_col = 'pt_ID', 
+    class_col = 'cell_type')
+rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
+
+levels(annot_df$cell_type)
+
+# Dendrograms and barplots
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'ward.D')
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'complete')
+
+# Correlation plot
+corr_plot(prcnt_by_pt)
+
+ggpubr::ggscatter(prcnt_by_pt, x = "Endothelial", y = 'Immune',
+          add = "reg.line", conf.int = TRUE, combine = TRUE,
+          cor.coef = TRUE, cor.method = "spearman", add.params = list(color = 'gray'),
+          xlab = "Endothelial cells", ylab = 'Immune cells')
+
+# Differential abundance
+x <- DA_analysis(annot_df, ref, class_col='cell_type', group_levels=c('G','P'),
+     group_col = 'CANARY', ptID_col = 'pt_ID')
+x$pvals
+
+```
+
+
+
+### Major cell types and immune subtypes and T cells as a group
+```{r, echo=FALSE}
+prcnt_by_pt <- ClassAbundanceByPt(data=annot_df, ptID_col = 'pt_ID', 
+    class_col = 'subtype3')
+rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
+
+levels(annot_df$subtype3)
+
+# Dendrograms and barplots
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'ward.D')
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'complete')
+
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'ward.D', corr_mat = T)
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'complete', corr_mat = T)
+
+# Correlation plot
+corr_plot(prcnt_by_pt)
+
+# Differential abundance
+x <- DA_analysis(annot_df, ref, class_col='cell_type', group_levels=c('G','P'),
+     group_col = 'CANARY', ptID_col = 'pt_ID')
+x$pvals
+```
+
+## Subtypes
+
+### All subtypes
+```{r, echo=FALSE}
+prcnt_by_pt <- ClassAbundanceByPt(data=annot_df, ptID_col = 'pt_ID', 
+    class_col = 'subtype')
+rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
+
+levels(annot_df$subtype)
+
+# Dendrograms and barplots
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'ward.D')
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'complete')
+
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'ward.D', corr_mat = T)
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'complete', corr_mat = T)
+
+# Correlation plot
+corr_plot(prcnt_by_pt)
+
+# Differential abundance
+x <- DA_analysis(annot_df, ref, class_col='cell_type', group_levels=c('G','P'),
+     group_col = 'CANARY', ptID_col = 'pt_ID')
+x$pvals
+```
+
+```{r echo=FALSE, fig.width = 5, fig.height = 2}
+# Scatter plots
+ggpubr::ggscatter(prcnt_by_pt, x = "Th_cells", y = c('Epithelial_7', 'Epithelial_8', 'Epithelial_9'),
+          add = "reg.line", conf.int = TRUE, combine = TRUE,
+          cor.coef = TRUE, cor.method = "spearman", add.params = list(color = '#FF6BBC'),
+          xlab = "CD4+ T cells", ylab = '')
+ggpubr::ggscatter(prcnt_by_pt, x = "Tc_cells", y = c('Epithelial_7', 'Epithelial_8', 'Epithelial_9'),
+          add = "reg.line", conf.int = TRUE, combine = TRUE,
+          cor.coef = TRUE, cor.method = "spearman", add.params = list(color = '#FF7500'),
+          xlab = "CD8+ T cells", ylab = '')
+    
+epi_path <- '/Users/senosam/Documents/Massion_lab/CyTOF_summary/woCD90/figs/heatmap_epi_kmeans.png'
+knitr::include_graphics(epi_path)
+```
+
+### Subtypes (T cells as one group)
+```{r, echo=FALSE}
+prcnt_by_pt <- ClassAbundanceByPt(data=annot_df, ptID_col = 'pt_ID', 
+    class_col = 'subtype2')
+rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
+
+levels(annot_df$subtype2)
+
+# Dendrograms and barplots
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'ward.D')
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'complete')
+
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'ward.D', corr_mat = T)
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'complete', corr_mat = T)
+
+# Correlation plot
+corr_plot(prcnt_by_pt)
+
+# Differential abundance
+x <- DA_analysis(annot_df, ref, class_col='cell_type', group_levels=c('G','P'),
+     group_col = 'CANARY', ptID_col = 'pt_ID')
+x$pvals
+```
+
+
+## Only Immune
+
+### All subtypes
+```{r, echo=FALSE}
+sbst <- subset(annot_df, cell_type == 'Immune')
+sbst$subtype <- factor(sbst$subtype)
+prcnt_by_pt <- ClassAbundanceByPt(data=sbst, ptID_col = 'pt_ID', 
+    class_col = 'subtype')
+rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
+
+levels(sbst$subtype)
+
+# Dendrograms and barplots
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'ward.D')
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'complete')
+
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'ward.D', corr_mat = T)
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'complete', corr_mat = T)
+
+# Correlation plot
+corr_plot(prcnt_by_pt)
+
+# Differential abundance
+x <- DA_analysis(annot_df, ref, class_col='cell_type', group_levels=c('G','P'),
+     group_col = 'CANARY', ptID_col = 'pt_ID')
+x$pvals
+
+```
+
+### Subtypes (T cells as one group)
+```{r, echo=FALSE}
+sbst <- subset(annot_df, cell_type == 'Immune')
+sbst$subtype2 <- factor(sbst$subtype2)
+prcnt_by_pt <- ClassAbundanceByPt(data=sbst, ptID_col = 'pt_ID', 
+    class_col = 'subtype2')
+rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
+
+levels(sbst$subtype2)
+
+# Dendrograms and barplots
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'ward.D')
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'complete')
+
+# Correlation plot
+corr_plot(prcnt_by_pt)
+
+# Differential abundance
+x <- DA_analysis(annot_df, ref, class_col='cell_type', group_levels=c('G','P'),
+     group_col = 'CANARY', ptID_col = 'pt_ID')
+x$pvals
+```
+
+
+## Only Epithelial
+
+### All Epithelial subtypes
+```{r, echo=FALSE}
+sbst <- subset(annot_df, cell_type == 'Epithelial')
+sbst$subtype <- factor(sbst$subtype)
+prcnt_by_pt <- ClassAbundanceByPt(data=sbst, ptID_col = 'pt_ID', 
+    class_col = 'subtype')
+rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
+
+levels(sbst$subtype)
+
+# Dendrograms and barplots
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'ward.D')
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'complete')
+
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'ward.D', corr_mat = T)
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'complete', corr_mat = T)
+
+# Correlation plot
+corr_plot(prcnt_by_pt)
+
+# Differential abundance
+x <- DA_analysis(annot_df, ref, class_col='cell_type', group_levels=c('G','P'),
+     group_col = 'CANARY', ptID_col = 'pt_ID')
+x$pvals
+```
+
+## Stromal cells only
+
+### All subtypes
+```{r, echo=FALSE}
+sbst1 <- subset(annot_df, cell_type == 'Immune')
+sbst2 <- subset(annot_df, cell_type == 'Endothelial')
+sbst3 <- subset(annot_df, cell_type == 'Mesenchymal')
+sbst <- rbind(sbst1, sbst2, sbst3)
+sbst$subtype <- factor(sbst$subtype)
+prcnt_by_pt <- ClassAbundanceByPt(data=sbst, ptID_col = 'pt_ID', 
+    class_col = 'subtype')
+rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
+
+levels(sbst$subtype)
+
+# Dendrograms and barplots
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'ward.D')
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'complete')
+
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'ward.D', corr_mat = T)
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'complete', corr_mat = T)
+
+# Correlation plot
+corr_plot(prcnt_by_pt)
+
+# Differential abundance
+x <- DA_analysis(annot_df, ref, class_col='cell_type', group_levels=c('G','P'),
+     group_col = 'CANARY', ptID_col = 'pt_ID')
+x$pvals
+```
+
+
+### Subtypes (T cells as one group)
+```{r, echo=FALSE}
+sbst1 <- subset(annot_df, cell_type == 'Immune')
+sbst2 <- subset(annot_df, cell_type == 'Endothelial')
+sbst3 <- subset(annot_df, cell_type == 'Mesenchymal')
+sbst <- rbind(sbst1, sbst2, sbst3)
+sbst$subtype2 <- factor(sbst$subtype2)
+prcnt_by_pt <- ClassAbundanceByPt(data=sbst, ptID_col = 'pt_ID', 
+    class_col = 'subtype2')
+rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
+
+levels(sbst$subtype2)
+
+# Dendrograms and barplots
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'ward.D')
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'complete')
+
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'ward.D', corr_mat = T)
+dendrogram_barplot(prcnt_by_pt, dist_method = 'euclidean', hclust_method = 'complete', corr_mat = T)
+
+# Correlation plot
+corr_plot(prcnt_by_pt)
+
+# Differential abundance
+x <- DA_analysis(annot_df, ref, class_col='cell_type', group_levels=c('G','P'),
+     group_col = 'CANARY', ptID_col = 'pt_ID')
+x$pvals
+```
+
+
+
+## Differential protein expression
+
+```{r}
+med_endo <- median_by_pt(annot_df, ref, subset_celltype=T, celltype_col='cell_type',
+    celltype_name='Endothelial', ask_features=F, ft_idxs = c(15, 17:31, 33:35, 37:48, 50, 51), 
+    ptID_col = 'pt_ID', groups=c('G', 'P'))
+
+med_epi <- median_by_pt(annot_df, ref, subset_celltype=T, celltype_col='cell_type',
+    celltype_name='Epithelial', ask_features=F, ft_idxs = c(15, 17:31, 33:35, 37:48, 50, 51), 
+    ptID_col = 'pt_ID', groups=c('G', 'P'))
+
+med_fibmes <- median_by_pt(annot_df, ref, subset_celltype=T, celltype_col='cell_type',
+    celltype_name='Mesenchymal', ask_features=F, ft_idxs = c(15, 17:31, 33:35, 37:48, 50, 51), 
+    ptID_col = 'pt_ID', groups=c('G', 'P'))
+
+med_imm <- median_by_pt(annot_df, ref, subset_celltype=T, celltype_col='cell_type',
+    celltype_name='Immune', ask_features=F, ft_idxs = c(15, 17:31, 33:35, 37:48, 50, 51), 
+    ptID_col = 'pt_ID', groups=c('G', 'P'))
+
+med_tcells <- median_by_pt(annot_df, ref, subset_celltype=T, celltype_col='subtype2',
+    celltype_name='T_cells', ask_features=F, ft_idxs = c(15, 17:31, 33:35, 37:48, 50, 51), 
+    ptID_col = 'pt_ID', groups=c('G', 'P'))
+
+med_CD8T <- median_by_pt(annot_df, ref, subset_celltype=T, celltype_col='subtype',
+    celltype_name='Tc_cells', ask_features=F, ft_idxs = c(15, 17:31, 33:35, 37:48, 50, 51), 
+    ptID_col = 'pt_ID', groups=c('G', 'P'))
+
+med_CD4T <- median_by_pt(annot_df, ref, subset_celltype=T, celltype_col='subtype',
+    celltype_name='Th_cells', ask_features=F, ft_idxs = c(15, 17:31, 33:35, 37:48, 50, 51), 
+    ptID_col = 'pt_ID', groups=c('G', 'P'))
+
+med_mye <- median_by_pt(annot_df, ref, subset_celltype=T, celltype_col='subtype',
+    celltype_name='Myeloid', ask_features=F, ft_idxs = c(15, 17:31, 33:35, 37:48, 50, 51), 
+    ptID_col = 'pt_ID', groups=c('G', 'P'))
+
+med_NK <- median_by_pt(annot_df, ref, subset_celltype=T, celltype_col='subtype',
+    celltype_name='NK_cells', ask_features=F, ft_idxs = c(15, 17:31, 33:35, 37:48, 50, 51), 
+    ptID_col = 'pt_ID', groups=c('G', 'P'))
+```
+
+
+## Endothelial cells
+```{r echo=FALSE}
+sbst <- reshape::melt(med_endo$Med_expression)
+#plot(ftimp_rf)
+ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,10)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22))
+
+med_endo$pvals
+```
+
+```{r echo=FALSE}
+plotly::ggplotly(ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,6)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22)))
+```
+
+
+## Fibroblasts/Mesenchymal cells
+```{r echo=FALSE}
+sbst <- reshape::melt(med_fibmes$Med_expression)
+#plot(ftimp_rf)
+ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,10)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22))
+
+med_fibmes$pvals
+```
+
+```{r echo=FALSE}
+plotly::ggplotly(ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,6)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22)))
+```
+
+
+## Immune cells
+```{r echo=FALSE}
+sbst <- reshape::melt(med_imm$Med_expression)
+#plot(ftimp_rf)
+ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,10)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22))
+
+med_imm$pvals
+```
+
+```{r echo=FALSE}
+plotly::ggplotly(ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,6)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22)))
+```
+
+
+## T cells
+```{r echo=FALSE}
+sbst <- reshape::melt(med_tcells$Med_expression)
+#plot(ftimp_rf)
+ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,10)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22))
+
+med_tcells$pvals
+```
+
+```{r echo=FALSE}
+plotly::ggplotly(ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,6)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22)))
+```
+
+
+## CD8 T cells
+```{r echo=FALSE}
+sbst <- reshape::melt(med_CD8T$Med_expression)
+#plot(ftimp_rf)
+ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,10)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22))
+
+med_CD8T$pvals
+```
+
+```{r echo=FALSE}
+plotly::ggplotly(ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,6)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22)))
+```
+
+
+## CD4 T cells
+```{r echo=FALSE}
+sbst <- reshape::melt(med_CD4T$Med_expression)
+#plot(ftimp_rf)
+ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,10)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22))
+
+med_CD4T$pvals
+```
+
+```{r echo=FALSE}
+plotly::ggplotly(ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,6)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22)))
+```
+
+
+## Myeloid cells
+```{r echo=FALSE}
+sbst <- reshape::melt(med_mye$Med_expression)
+#plot(ftimp_rf)
+ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,10)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22))
+
+med_mye$pvals
+```
+
+```{r echo=FALSE}
+plotly::ggplotly(ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,6)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22)))
+```
+
+
+## NK cells
+```{r echo=FALSE}
+sbst <- reshape::melt(med_NK$Med_expression)
+#plot(ftimp_rf)
+ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,10)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22))
+
+med_NK$pvals
+```
+
+```{r echo=FALSE}
+plotly::ggplotly(ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,6)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22)))
+```
+
+
+## Epithelial cells
+```{r echo=FALSE}
+sbst <- reshape::melt(med_epi$Med_expression)
+#plot(ftimp_rf)
+ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,10)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22))
+
+med_epi$pvals
+```
+
+```{r echo=FALSE}
+plotly::ggplotly(ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,6)+
+  ggsignif::geom_signif(comparisons = list(c("G", "P")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22)))
+```
+
+
+
+# Cell type proyection
+
+```{r}
+# sampling k cells per sample
+smpl <- annot_df[1,]
+smpl <- smpl[-1,]
+k = 1000
+pts = unique(annot_df$pt_ID)
+for(i in pts){
+  #print(dim(annot_df[which(annot_df$pt_ID == i),]))
+  x <- dplyr::sample_n(annot_df[which(annot_df$pt_ID %in% i),], size=k, replace=F)
+  smpl <- rbind(smpl, x)
+}
+smpl <- denoisingCTF::t_asinh(smpl)
+```
+
+```{r}
+#print(as.matrix(colnames(annot_df)))
+col_id <- c(15, 17:31, 33:35, 37:51)
+#col_id <- c(15, 17:31)
+
+# tSNE
+tsne_smp <- Rtsne::Rtsne(smpl[,col_id],  check_duplicates = FALSE)
+tsne_smp <- as.data.frame(cbind(smpl,
+                                    tSNE1 = tsne_smp$Y[,1],
+                                    tSNE2 = tsne_smp$Y[,2]))
+# UMAP
+umap_smp <- umap::umap(smpl[,col_id])
+umap_smp <- as.data.frame(cbind(smpl,
+                                    UMAP1 = umap_smp$layout[,1],
+                                    UMAP2 = umap_smp$layout[,2]))
+```
+
+```{r}
+ClusterEval_plot <- function(data, data_type = c('heatmap', 'tSNE', 'UMAP'), cluster_col, ft_cols){
+    # Heatmap
+    if(data_type == 'heatmap'){
+        library(gplots)
+        scale_max = max(data)
+        heat_palette_med <- colorRampPalette(c("black", "yellow","#FAF7C9"))
+        pairs.breaks_med <- c(seq(0, scale_max/6.6, by = 0.1),
+                              seq(scale_max/6.6, scale_max/3.3, by = 0.1),
+                              seq(scale_max/3.3, scale_max, by = 0.1))
+
+        hm_pl <- heatmap.2(data,
+                  main = "Median protein expression",
+                  dendrogram = "both",
+                  Rowv = TRUE,
+                  Colv = TRUE,
+                  breaks = pairs.breaks_med,
+                  revC = FALSE,
+                  symkey = FALSE,
+                  symbreaks = FALSE,
+                  scale = "none",
+                  cexRow = 0.8,
+                  cexCol = 0.8,
+                  key = TRUE,
+                  col = heat_palette_med,
+                  trace = "none",
+                  density.info = 'none',
+                  sepcolor="#424242",
+                  margins = c(6,10),
+                  colsep=1:ncol(data),
+                  rowsep=1:nrow(data),
+                  sepwidth=c(0.005,0.005),
+                  keysize = 1,
+                  key.title = 'Intensity',
+                  key.xlab= "Arcsinh Transform",
+                  extrafun = box(lty = "solid"),
+                  cellnote = data,
+                  notecol = 'red',
+                  srtCol=45
+                  )
+        return(hm_pl)
+    }
+
+    if(data_type == 'tSNE'){
+        # Plotting
+        library(ggplot2)
+        library(gridExtra)
+        library(reshape2)
+        data <- data[c(colnames(data)[ft_cols], cluster_col, 'tSNE1', 'tSNE2')]
+        test <- melt(data, id= c(cluster_col, 'tSNE1', 'tSNE2'))
+        var_list <- unique(test$variable)
+        pl <- list()
+
+        # Defining cluster centers
+        edata <- cbind(data$tSNE1, data$tSNE2, cluster_col=data[cluster_col])
+        colnames(edata) <- c('x', "y", "z")
+        center <- aggregate(cbind(x,y) ~ z, data = edata, median)
+
+        p_cl <- ggplot(data, aes_string(x='tSNE1', y='tSNE2', color = data[,cluster_col]))+
+          geom_point(alpha=0.6, shape = 19) + theme_bw() + ggtitle(cluster_col)+
+          annotate("text", label = center[,1], x=center[,2], y = center[,3],
+                   size = 6, colour = "black", fontface = 'bold')
+        for(i in seq_along(var_list)) {
+          p <- ggplot(subset(test,test$variable==var_list[i]), aes(x=tSNE1, y=tSNE2, colour = value)) +
+            geom_point(alpha=0.4) + theme_bw() + ggtitle(var_list[i]) +
+            scale_colour_gradient(low = "gray75", high = "blue")
+          pl[[i]] <- p
+        }
+
+        plot(p_cl)
+        tsne_pl <- grid.arrange(grobs=pl)
+    }
+
+    if(data_type == 'UMAP'){
+        # Plotting
+        library(ggplot2)
+        library(gridExtra)
+        library(reshape2)
+        data <- data[c(colnames(data)[ft_cols], cluster_col, 'UMAP1', 'UMAP2')]
+        test <- melt(data, id= c(cluster_col, 'UMAP1', 'UMAP2'))
+        var_list <- unique(test$variable)
+        pl <- list()
+
+        # Defining cluster centers
+        edata <- cbind(data$UMAP1, data$UMAP2, cluster_col=data[cluster_col])
+        colnames(edata) <- c('x', "y", "z")
+        center <- aggregate(cbind(x,y) ~ z, data = edata, median)
+
+        p_cl <- ggplot(data, aes_string(x='UMAP1', y='UMAP2', color = data[,cluster_col]))+
+          geom_point(alpha=0.6, shape = 19) + theme_bw() + ggtitle(cluster_col)+
+          annotate("text", label = center[,1], x=center[,2], y = center[,3],
+                   size = 6, colour = "black", fontface = 'bold')
+        for(i in seq_along(var_list)) {
+          p <- ggplot(subset(test,test$variable==var_list[i]), aes(x=UMAP1, y=UMAP2, colour = value)) +
+            geom_point(alpha=0.4) + theme_bw() + ggtitle(var_list[i]) +
+            scale_colour_gradient(low = "gray75", high = "blue")
+          pl[[i]] <- p
+        }
+        
+        plot(p_cl)
+        umap_pl <- grid.arrange(grobs=pl)
+    }
+}
+```
+
+```{r}
+ClusterEval_plot(tsne_smp, data_type = 'tSNE', cluster_col= 'subtype4', ft_cols = col_id)
+ClusterEval_plot(umap_smp, data_type = 'UMAP', cluster_col= 'subtype4', ft_cols = col_id)
+
+```
+

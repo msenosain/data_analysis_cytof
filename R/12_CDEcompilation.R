@@ -29,8 +29,16 @@ k3 <- which(is.na(CDE_TMA36$Progression_Date)==FALSE)
 CDE_TMA36[k3,'Progression_st'] <- 'Yes'
 
 CDE_TMA36['DRP_st'] <- 'No'
-CDE_TMA36[c(k1,k2,k3),'DRP_st'] <- 'Yes'
+CDE_TMA36[unique(c(k1,k2,k3)),'DRP_st'] <- 'Yes'
+
+#------------------------------------------------------------------------------
+# Add updated CANARY and SILA info (Khushbu)
+#------------------------------------------------------------------------------
+
+y <- read.csv('/Users/senosam/Documents/Massion_lab/radiomics_summary/TMA36_CANARY_khushbu.csv')
+CDE_TMA36$CANARY <-  y$SILA_P[c(match(CDE_TMA36$pt_ID, y$pt_ID))]
+CDE_TMA36['SILA'] <- y$SILA_S[c(match(CDE_TMA36$pt_ID, y$pt_ID))]
 
 # Save csv file
 
-write.csv(CDE_TMA36, "CDE_TMA36_2020FEB25_SA.csv", row.names = FALSE)
+write.csv(CDE_TMA36, "/Users/senosam/Documents/Massion_lab/CyTOF_summary/CDE_TMA36_2020FEB25_SA.csv", row.names = FALSE)

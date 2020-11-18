@@ -476,6 +476,13 @@ load("/Users/senosam/Documents/Massion_lab/manuscripts/prelim_cytof_adc/data/tum
 
 ```
 
+```{r}
+umap_smp['subtype4'] <- as.character(umap_smp$subtype)
+umap_smp[which(umap_smp$cell_type=='Epithelial'), 'subtype4'] <- 'ECC'
+umap_smp$subtype4 <- as.factor(umap_smp$subtype4)
+umap_smp$subtype4 <- factor(umap_smp$subtype4, levels = c("ECC", "Endothelial", "Mesenchymal", "Other_immune", "Myeloid", "Tc_cells", "Th_cells"))
+```
+
 ```{r, echo=FALSE}
 # By density, cluster, patient
 #plot_colors
@@ -604,6 +611,10 @@ ref$CANARY[which(ref$CANARY =='P')] <- 'SPS'
 ref$CANARY <- as.factor(ref$CANARY)
 # boxplots
 # save tables
+med_all <- median_by_pt(annot_df, ref, subset_celltype=F,
+    ask_features=F, ft_idxs = c(15, 17:31, 33:35, 37:48, 50, 51), 
+    ptID_col = 'pt_ID', groups=c('LPS', 'SPS'))
+
 med_endo <- median_by_pt(annot_df, ref, subset_celltype=T, celltype_col='cell_type',
     celltype_name='Endothelial', ask_features=F, ft_idxs = c(15, 17:31, 33:35, 37:48, 50, 51), 
     ptID_col = 'pt_ID', groups=c('LPS', 'SPS'))
@@ -631,6 +642,22 @@ med_CD4T <- median_by_pt(annot_df, ref, subset_celltype=T, celltype_col='subtype
 med_mye <- median_by_pt(annot_df, ref, subset_celltype=T, celltype_col='subtype',
     celltype_name='Myeloid', ask_features=F, ft_idxs = c(15, 17:31, 33:35, 37:48, 50, 51), 
     ptID_col = 'pt_ID', groups=c('LPS', 'SPS'))
+```
+
+#### All cells
+```{r echo=FALSE}
+sbst <- reshape::melt(med_all$Med_expression)
+#plot(ftimp_rf)
+ggplot(sbst, aes(x=CANARY, y=value, color = CANARY)) +
+  geom_boxplot() +
+  ylim(0,10)+
+  ggsignif::geom_signif(comparisons = list(c("LPS", "SPS")), 
+       map_signif_level=TRUE) +
+  facet_wrap(~variable) +
+  theme(plot.title = element_text(hjust = 0.5, size=22)) +
+  scale_color_manual(values=canary)
+
+med_all$pvals
 ```
 
 #### Endothelial cells
@@ -812,6 +839,13 @@ col_id <- c(15,18,19,21:29,31,33,35,37,38,40:43,45,48,50,51)
 load("/Users/senosam/Documents/Massion_lab/manuscripts/prelim_cytof_adc/data/tumor_samples /UMAPepiclusters_paper2020.RData")
 ```
 
+```{r}
+umap_smp['subtype'] <- gsub('Epithelial', 'ECCc' ,umap_smp$subtype)
+umap_smp$subtype <- as.factor(umap_smp$subtype)
+umap_smp$subtype <- factor(umap_smp$subtype, levels = c(paste0("ECCc_", 1:10)))
+#umap_smp$subtype4 <- factor(umap_smp$subtype4, levels = c("ECC", "Endothelial", "Mesenchymal", "Other_immune", "Myeloid", "Tc_cells", "Th_cells"))
+```
+
 ```{r, echo=FALSE}
 # By density, cluster, patient
 #plot_colors
@@ -902,89 +936,71 @@ heatmap.2(data,
 
 ```
 
-### Fig 4D - Correlation plot Immune cells vs Endothelial cells
-
-```{r, echo=FALSE}
-sbst <- subset(annot_df, cell_type != 'Epithelial')
-sbst[,'subtype'] <- factor(sbst[,'subtype'])
-prcnt_by_pt <- ClassAbundanceByPt(data=sbst, ptID_col = 'pt_ID', 
-    class_col = 'subtype')
-```
-
-```{r, echo=FALSE}
-sbst <- subset(annot_df, cell_type == 'Epithelial')
-sbst$subtype <- factor(sbst$subtype)
-prcnt_by_ptE <- ClassAbundanceByPt(data=sbst, ptID_col = 'pt_ID', 
-    class_col = 'subtype')
-prcnt_by_pt <- cbind(prcnt_by_pt/2, prcnt_by_ptE/2)
-```
-
+### Fig 4D - Correlation plot T cells vs ECCc
 
 ```{r echo=FALSE, fig.width = 9, fig.height = 3}
-# prcnt_by_pt <- ClassAbundanceByPt(data=annot_df, ptID_col = 'pt_ID', 
-#     class_col = 'subtype')
-# rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
+prcnt_by_pt <- ClassAbundanceByPt(data=annot_df, ptID_col = 'pt_ID', 
+    class_col = 'subtype')
+rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
 prcnt_by_pt <- prcnt_by_pt*100
+colnames(prcnt_by_pt) <- gsub('Epithelial', 'ECCc', colnames(prcnt_by_pt))
 
 # Correlation plot
 corr_plot(prcnt_by_pt)
 
 # Scatter plots
-ggpubr::ggscatter(prcnt_by_pt, x = "Th_cells", y = c('Epithelial_7', 'Epithelial_8', 'Epithelial_9'),
+ggpubr::ggscatter(prcnt_by_pt, x = "Th_cells", y = c('ECCc_7', 'ECCc_8', 'ECCc_9'),
           add = "reg.line", conf.int = TRUE, combine = TRUE, scales='free',
           cor.coef = TRUE, add.params = list(color = 'grey65'), expand = c(0, 0),
           cor.coeff.args = list(method = "spearman", label.x = 2.5, label.y = -0.5, label.size=4),
-          xlab = "CD4+ T cells %", ylab = 'Epithelial cells %') +
+          xlab = "CD4+ T cells %", ylab = 'ECC %') +
           ggpubr::font("xy.text", size = 10) +
           ggpubr::font("xlab", size = 12, face = 'bold') +
           ggpubr::font("ylab", size = 12, face = 'bold') 
   
-ggpubr::ggscatter(prcnt_by_pt, x = "Tc_cells", y = c('Epithelial_7', 'Epithelial_8', 'Epithelial_9'),
+ggpubr::ggscatter(prcnt_by_pt, x = "Tc_cells", y = c('ECCc_7', 'ECCc_8', 'ECCc_9'),
           add = "reg.line", conf.int = TRUE, combine = TRUE, scales='free', face = 'bold',
           cor.coef = TRUE, add.params = list(color = 'grey65'), expand = c(0, 0),
           cor.coeff.args = list(method = "spearman", label.x = 2.5, label.y = -0.5, label.size=4),
-          xlab = "CD8+ T cells %", ylab = 'Epithelial cells %') +
+          xlab = "CD8+ T cells %", ylab = 'ECC %') +
           ggpubr::font("xy.text", size = 10) +
           ggpubr::font("xlab", size = 12, face = 'bold') +
           ggpubr::font("ylab", size = 12, face = 'bold')
 # save correlation table, p values table 
 ```
 
-```{r}
-corr_plot(prcnt_by_pt)
-```
 
 ## Supplementary info
 
 ### S. Figure on cluster abundances G vs P
 ```{r, echo=FALSE}
-# Differential abundance
-x <- DA_analysis(sbst, ref, class_col='subtype', group_levels=c('G','P'),
-     group_col = 'CANARY', ptID_col = 'pt_ID')
-x$pvals
-
-prcnt_by_pt <- ClassAbundanceByPt(data=sbst, ptID_col = 'pt_ID', 
-    class_col = 'subtype')
-rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
-prcnt_by_pt['pt_ID'] <- ref$pt_ID
-prcnt_by_pt['CANARY'] <- ref$CANARY
-prcnt_by_pt <- prcnt_by_pt %>%
-  mutate(., Epi_789 = Epithelial_7 + Epithelial_8 +Epithelial_9,
-         Epi_361 = Epithelial_3 + Epithelial_6 + Epithelial_1,
-         Epi_24 = Epithelial_2 + Epithelial_4,
-         Epi_510 = Epithelial_5 + Epithelial_10)
-
-
-rs_prcnt <- reshape::melt(prcnt_by_pt)
-ggplot(rs_prcnt, aes(x=CANARY, y=value, color = CANARY)) +
-  geom_boxplot() +
-  #ylim(0,1)+
-  #ggsignif::geom_signif(comparisons = list(c("LPS", "SPS")), 
-  #     map_signif_level=TRUE) +
-  facet_wrap(~variable, scales='free') +
-  theme(plot.title = element_text(hjust = 0.5, size=22))+
-  scale_color_manual(values=canary)
-# save tables
+# # Differential abundance
+# x <- DA_analysis(sbst, ref, class_col='subtype', group_levels=c('G','P'),
+#      group_col = 'CANARY', ptID_col = 'pt_ID')
+# x$pvals
+# 
+# prcnt_by_pt <- ClassAbundanceByPt(data=sbst, ptID_col = 'pt_ID', 
+#     class_col = 'subtype')
+# rownames(prcnt_by_pt) <- paste0(rownames(prcnt_by_pt), '_', ref$CANARY)
+# prcnt_by_pt['pt_ID'] <- ref$pt_ID
+# prcnt_by_pt['CANARY'] <- ref$CANARY
+# prcnt_by_pt <- prcnt_by_pt %>%
+#   mutate(., Epi_789 = Epithelial_7 + Epithelial_8 +Epithelial_9,
+#          Epi_361 = Epithelial_3 + Epithelial_6 + Epithelial_1,
+#          Epi_24 = Epithelial_2 + Epithelial_4,
+#          Epi_510 = Epithelial_5 + Epithelial_10)
+# 
+# 
+# rs_prcnt <- reshape::melt(prcnt_by_pt)
+# ggplot(rs_prcnt, aes(x=CANARY, y=value, color = CANARY)) +
+#   geom_boxplot() +
+#   #ylim(0,1)+
+#   #ggsignif::geom_signif(comparisons = list(c("LPS", "SPS")), 
+#   #     map_signif_level=TRUE) +
+#   facet_wrap(~variable, scales='free') +
+#   theme(plot.title = element_text(hjust = 0.5, size=22))+
+#   scale_color_manual(values=canary)
+# # save tables
 
 ```
 

@@ -167,53 +167,20 @@ dir <- '/Users/senosam/Documents/Massion_lab/CyTOF_summary/both'
 save(hm_data, tsne_data, umap_data, annot_imm, file = file.path(dir,'immunesubtypes.RData'))
 
 
-# Epithelial cells
-##########################################
-
-# Clustering for Epithelial cells
-ct_epi <- subset(annot_df, cell_type_A == 'Epithelial')
-
-DetermineNumberOfClusters(ct_epi, k_max=15, plot=T,smooth=0.2,
-                                      iter.max=200, seed = 45)
-
-epi_cl <- clustering(ct_epi, n_clusters = 10, iterations = 200, seed = 50)
-# 15 18 19 21 22 23 24 25 26 27 28 29 31 33 35 37 38 40 41 42 43 45 48 50 51
-
-# Clustering Evaluation
-hm_data <- ClusterEval_data(epi_cl, eval_type = 'heatmap')
-ClusterEval_plot(hm_data, data_type = 'heatmap')
-
-table(epi_cl$cluster)/nrow(epi_cl)*100
-
-tsne_data <- ClusterEval_data(epi_cl, eval_type = 'tSNE', sample_size = 25000)
-ClusterEval_plot(tsne_data, data_type = 'tSNE')
-
-umap_data <- ClusterEval_data(epi_cl, eval_type = 'UMAP', sample_size = 25000)
-ClusterEval_plot(umap_data, data_type = 'UMAP')
-
-# Cluster annotation
-epi_ls <- list()
-for(i in 1:10){
-    epi_ls[i] <- c(i)
-}
-names(epi_ls) <- paste0('Epithelial_',rep(1:10))
-
-annot_epi <- ClusterAnnotation(data = ct_epi, df_cluster = epi_cl, 
-    ls_annotation = epi_ls, annotation_col = 'subtype')
-
-dir <- '/Users/senosam/Documents/Massion_lab/CyTOF_summary/both'
-
-save(hm_data, tsne_data, umap_data, annot_epi, file = file.path(dir,'episubtypes.RData'))
-
 
 # Other cell types
 ##########################################
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/20_ClustAnnot_functions.R")
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/immunesubtypes.RData")
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/majorcelltypes_merged.RData")
 
 annot_imm <- change_colname(annot_imm, 'subtype', 'subtype_A')
-annot_epi <- change_colname(annot_epi, 'subtype', 'subtype_A')
 
 annot_imm['subtype_B'] <- annot_imm$subtype_A
-annot_epi['subtype_B'] <- annot_epi$subtype_A
+
+ct_epi <- subset(annot_df, cell_type_A == 'Epithelial')
+ct_epi[,'subtype_A'] <- ct_epi$cell_type_A
+ct_epi[,'subtype_B'] <- ct_epi$cell_type_A
 
 ct_mes <- subset(annot_df, cell_type_A == 'Mesenchymal')
 ct_mes[,'subtype_A'] <- ct_mes$cell_type_A
@@ -228,18 +195,135 @@ ct_endo <- subset(annot_df, cell_type_A == 'Endothelial')
 ct_endo[,'subtype_A'] <- ct_endo$cell_type_A
 ct_endo[,'subtype_B'] <- ct_endo$cell_type_A
 
-annot_df <- rbind(annot_imm, annot_epi, ct_fibm, ct_endo)
+
+annot_df <- rbind(annot_imm, ct_epi, ct_fibm, ct_endo)
 
 dir <- '/Users/senosam/Documents/Massion_lab/CyTOF_summary/both'
 
 save(ref, annot_df, file = file.path(dir,'cellsubtypes.RData'))
 
 
-
-
 ##########################################
+# Clustering cell types
+##########################################
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/20_ClustAnnot_functions.R")
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/majorcelltypes_merged.RData")
+
+# Clustering Epithelial cells
+##########################################
+ct_epi <- subset(annot_df, cell_type_A == 'Epithelial')
+
+DetermineNumberOfClusters(ct_epi, k_max=15, plot=T,smooth=0.2,
+                                      iter.max=200, seed = 45)
+
+epi_cl <- clustering(ct_epi, n_clusters = 10, iterations = 200, seed = 50)
+# 15 18 19 21 22 23 24 25 26 27 28 29 31 33 35 37 38 40 41 42 43 45 48 50 51
+
+# Clustering Evaluation
+hm_data <- ClusterEval_data(epi_cl, eval_type = 'heatmap')
+ClusterEval_plot(hm_data, data_type = 'heatmap')
+
+table(epi_cl$cluster)/nrow(epi_cl)*100
+
+umap_data <- ClusterEval_data(epi_cl, eval_type = 'UMAP', sample_size = 25000)
+ClusterEval_plot(umap_data, data_type = 'UMAP')
+
+# Cluster annotation
+epi_ls <- list()
+for(i in 1:10){
+    epi_ls[i] <- c(i)
+}
+names(epi_ls) <- paste0('Epithelial_',rep(1:10))
+
+annot_epi <- ClusterAnnotation(data = ct_epi, df_cluster = epi_cl, 
+    ls_annotation = epi_ls, annotation_col = 'clusters_A')
+annot_epi['clusters_B'] <- annot_epi$clusters_A
+
+dir <- '/Users/senosam/Documents/Massion_lab/CyTOF_summary/both'
+save(hm_data, umap_data, annot_epi, file = file.path(dir,'epiclusters.RData'))
+
+
+# 17 18 19 20 21 22 24 25 26 28 31 33 35 42 45 48 50
+
+# Clustering CD4 T cells
+##########################################
+ct_cd4 <- subset(annot_df, subtype_A == 'Th_cells')
+
+DetermineNumberOfClusters(ct_cd4, k_max=10, plot=T,smooth=0.2,
+                                      iter.max=200, seed = 45)
+
+cd4_cl <- clustering(ct_cd4, n_clusters = 4, iterations = 200, seed = 50)
+# 18 19 20 21 22 26 28 31 35 42 50
+
+# Clustering Evaluation
+hm_data <- ClusterEval_data(cd4_cl, eval_type = 'heatmap')
+ClusterEval_plot(hm_data, data_type = 'heatmap')
+
+table(cd4_cl$cluster)/nrow(cd4_cl)*100
+
+umap_data <- ClusterEval_data(cd4_cl, eval_type = 'UMAP', sample_size = 10000)
+ClusterEval_plot(umap_data, data_type = 'UMAP')
+
+# Cluster annotation
+cd4_ls <- list()
+for(i in 1:10){
+    cd4_ls[i] <- c(i)
+}
+names(cd4_ls) <- paste0('Th_',rep(1:4))
+
+annot_cd4 <- ClusterAnnotation(data = ct_cd4, df_cluster = cd4_cl, 
+    ls_annotation = cd4_ls, annotation_col = 'clusters_A')
+annot_cd4['clusters_B'] <- annot_cd4$clusters_A
+
+dir <- '/Users/senosam/Documents/Massion_lab/CyTOF_summary/both'
+save(hm_data, umap_data, annot_cd4, file = file.path(dir,'cd4clusters.RData'))
+
+
+
+# Clustering CD8 T cells
+##########################################
+ct_cd8 <- subset(annot_df, subtype_A == 'Tc_cells')
+
+# Clustering DN T cells
+##########################################
+ct_dnt <- subset(annot_df, subtype_A == 'DNT_cells')
+
+# Clustering Myeloid cells
+##########################################
+ct_mye <- subset(annot_df, subtype_A == 'Myeloid')
+
+# Clustering NK cells
+##########################################
+ct_NK <- subset(annot_df, subtype_A == 'NK_cells')
+
+# Clustering Fib_Mesenchymal cells
+##########################################
+ct_fmes <- subset(annot_df, cell_type_B == 'Fib_Mesenchymal')
+
+# Clustering Mesenchymal cells
+##########################################
+ct_mes <- subset(annot_df, cell_type_A == 'Mesenchymal')
+
+# Clustering Fibroblasts
+##########################################
+ct_mes <- subset(annot_df, cell_type_A == 'Fibroblasts')
+
+# Clustering Endothelial cells
+##########################################
+ct_mes <- subset(annot_df, cell_type_A == 'Endothelial')
+
+
+
+
+
+# put all in clusters_A clusters_B
+
+
+
+
+###############################################################################
 # ***Only for first 11 tumors***
-##########################################
+###############################################################################
 
 # Immune cells
 ##########################################

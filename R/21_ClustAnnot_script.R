@@ -6,7 +6,7 @@
 load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/woCD90.RData")
 
 # Source code
-source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/ClustAnnot_functions.R")
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/20_ClustAnnot_functions.R")
 
 # Clustering
 dt_cl <- clustering(big_df, n_clusters = 10, iterations = 200, seed = 45) 
@@ -56,7 +56,7 @@ save(hm_data, tsne_data, umap_data, annot_df, prcnt_by_pt, file = 'majorcelltype
 load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/withCD90.RData")
 
 # Source code
-source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/ClustAnnot_functions.R")
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/20_ClustAnnot_functions.R")
 
 
 # Clustering
@@ -104,7 +104,7 @@ save(hm_data, tsne_data, umap_data, annot_df, prcnt_by_pt, file = 'majorcelltype
 #save(annot_df, ref, annot_df_wo, ref_wo, file = 'majorcelltypes.RData')
 
 # Source code
-source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/ClustAnnot_functions.R")
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/20_ClustAnnot_functions.R")
 
 annot_df <- change_colname(annot_df, 'cell_type', 'cell_type_A')
 annot_df_wo <- change_colname(annot_df_wo, 'cell_type', 'cell_type_A')
@@ -123,7 +123,9 @@ annot_df_wo <- edit_names(annot_df_wo, col_name = 'cell_type_B', var_oldname = '
 annot_df <- rbind(annot_df_wo, annot_df)
 ref <- rbind(ref_wo, ref)
 
-save(annot_df, ref, file = 'majorcelltypes_merged.RData')
+dir <- '/Users/senosam/Documents/Massion_lab/CyTOF_summary/both'
+
+save(annot_df, ref, file = file.path(dir, 'majorcelltypes_merged.RData'))
 
 
 # Immune cells
@@ -150,18 +152,19 @@ ClusterEval_plot(umap_data, data_type = 'UMAP')
 myeloid <- c(3,4)
 th_cells <- c(5)
 tc_cells <- c(6)
-t_cells <- c(2,8)
+dnt_cells <- c(2,8)
 nk_cells <- c(1)
 other_immune <- c(7)
 
 im_ls <- list('Myeloid'= myeloid, 'Th_cells'=th_cells, 'Tc_cells'=tc_cells, 
-    'T_cells'= t_cells, 'NK_cells'=nk_cells, 'Other_immune'=other_immune)
+    'DNT_cells'= dnt_cells, 'NK_cells'=nk_cells, 'Other_immune'=other_immune)
 
 annot_imm <- ClusterAnnotation(data = ct_immune, df_cluster = imm_cl, 
     ls_annotation = im_ls, annotation_col = 'subtype')
 
+dir <- '/Users/senosam/Documents/Massion_lab/CyTOF_summary/both'
 
-save(hm_data, tsne_data, umap_data, annot_imm, file = 'immunesubtypes.RData')
+save(hm_data, tsne_data, umap_data, annot_imm, file = file.path(dir,'immunesubtypes.RData'))
 
 
 # Epithelial cells
@@ -198,7 +201,9 @@ names(epi_ls) <- paste0('Epithelial_',rep(1:10))
 annot_epi <- ClusterAnnotation(data = ct_epi, df_cluster = epi_cl, 
     ls_annotation = epi_ls, annotation_col = 'subtype')
 
-save(hm_data, tsne_data, umap_data, annot_epi, file = 'episubtypes.RData')
+dir <- '/Users/senosam/Documents/Massion_lab/CyTOF_summary/both'
+
+save(hm_data, tsne_data, umap_data, annot_epi, file = file.path(dir,'episubtypes.RData'))
 
 
 # Other cell types
@@ -225,36 +230,9 @@ ct_endo[,'subtype_B'] <- ct_endo$cell_type_A
 
 annot_df <- rbind(annot_imm, annot_epi, ct_fibm, ct_endo)
 
+dir <- '/Users/senosam/Documents/Massion_lab/CyTOF_summary/both'
 
-
-# Create another col in which all t cell types are labeled as t cells
-annot_df['subtype_A2'] <- annot_df$subtype_A
-annot_df$subtype_A2 <- as.character(annot_df$subtype_A2)
-k <- which(annot_df$subtype_A %in% c('Tc_cells','Th_cells'))
-annot_df[k,'subtype_A2'] <- 'T_cells'
-annot_df$subtype_A2 <- factor(annot_df$subtype_A2)
-
-annot_df['subtype_B2'] <- annot_df$subtype_B
-annot_df$subtype_B2 <- as.character(annot_df$subtype_B2)
-k <- which(annot_df$subtype_B %in% c('Tc_cells','Th_cells'))
-annot_df[k,'subtype_B2'] <- 'T_cells'
-annot_df$subtype_B2 <- factor(annot_df$subtype_B2)
-
-# Create another col in which all epi types are labeled as epi (w/immune subtypes)
-annot_df['subtype_A3'] <- annot_df$subtype_A2
-annot_df$subtype_A3 <- as.character(annot_df$subtype_A3)
-k <- which(annot_df$subtype_A2 %in% c(paste0('Epithelial_',rep(1:10))))
-annot_df[k,'subtype_A3'] <- 'Epithelial'
-annot_df$subtype_A3 <- factor(annot_df$subtype_A3)
-
-annot_df['subtype_B3'] <- annot_df$subtype_B2
-annot_df$subtype_B3 <- as.character(annot_df$subtype_B3)
-k <- which(annot_df$subtype_B2 %in% c(paste0('Epithelial_',rep(1:10))))
-annot_df[k,'subtype_B3'] <- 'Epithelial'
-annot_df$subtype_B3 <- factor(annot_df$subtype_B3)
-
-
-save(ref, annot_df, file = 'cellsubtypes.RData')
+save(ref, annot_df, file = file.path(dir,'cellsubtypes.RData'))
 
 
 
@@ -390,7 +368,7 @@ save(ref, annot_df, file = 'cellsubtypes.RData')
 
 load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/CyTOF_ADC_controls.RData")
 
-source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/ClustAnnot_functions.R")
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/20_ClustAnnot_functions.R")
 
 
 # Clustering

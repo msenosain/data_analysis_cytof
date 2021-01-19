@@ -189,27 +189,22 @@ ClusterAnnotation <- function(data, df_cluster, ls_annotation,
 }
 
 
-ClassAbundanceByPt <- function(data, ptID_col = 'pt_ID', class_col = 'cell_type'){
+
+ClassAbundanceByPt <- function(data, ptID_col = 'pt_ID', class_col){
     ptids <- unique(data[,ptID_col])
-    prcnt <- table(data[,class_col])
-    ptID_idx <- grep(ptID_col, colnames(data))
-    colnames(data)[ptID_idx] <- 'pt_ID'
+    ct <- unique(data[,class_col])
+    prcnt <- data.frame(matrix(ncol = length(ct), nrow = length(ptids), dimnames=list(ptids, ct)))
 
-    for(i in ptids){
-        k <- subset(data, pt_ID==i)
-        k <-table(k[,class_col])/nrow(k)#*100
-        prcnt <- rbind(prcnt,k)
+    for(i in 1:nrow(prcnt)){
+      k <- which(data[,ptID_col] == ptids[i])
+      k <- table(data[k,class_col])/length(k)
+      k <- k[ct]
+      k[is.na(k)] <- 0
+      prcnt[i,] <- k
     }
-
-    prcnt <- data.frame(prcnt)[-1,]
-    rownames(prcnt) <- ptids
 
     return(prcnt)
 }
-
-
-
-
 
 
 findElbow <- function(data, max){

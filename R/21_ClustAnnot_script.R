@@ -557,6 +557,7 @@ dir <- '/Users/senosam/Documents/Massion_lab/CyTOF_summary/both'
 save(annot_otherimm, file = file.path(dir,'otherimm.RData'))
 
 ###############################################################################
+# RBIND ALL CLUSTERS
 load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/majorcelltypes_merged.RData")
 remove(annot_df)
 load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/endoclusters.RData")
@@ -574,6 +575,95 @@ annot_df <- rbind(annot_epi, annot_fmes, annot_endo, annot_cd4, annot_cd8, annot
 dir <- '/Users/senosam/Documents/Massion_lab/CyTOF_summary/both'
 save(annot_df, ref, file = file.path(dir,'cellclusters.RData'))
 
+###############################################################################
+# GET Cell type percentages tables
+###############################################################################
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/20_ClustAnnot_functions.R")
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/cellclusters.RData")
+
+# By major cell types
+prcnt_celltypes <- ClassAbundanceByPt(data=annot_df, ptID_col = 'pt_ID', 
+    class_col = 'cell_type_B')
+
+# By cell subtypes
+prcnt_subtypes <- ClassAbundanceByPt(data=annot_df, ptID_col = 'pt_ID', 
+    class_col = 'subtype_B')
+
+# By cell clusters
+prcnt_clusters <- ClassAbundanceByPt(data=annot_df, ptID_col = 'pt_ID', 
+    class_col = 'clusters_B')
+
+dir <- '/Users/senosam/Documents/Massion_lab/CyTOF_summary/both'
+save(prcnt_celltypes, prcnt_subtypes, prcnt_clusters, file = file.path(dir,'percent_pt.RData'))
+
+###############################################################################
+# Get protein co-expression (correlation)
+###############################################################################
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/20_ClustAnnot_functions.R")
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/cellclusters.RData")
+
+
+corr_f <- function(data, rcorr_type = 'spearman', p.adjust_method = 'BH'){
+
+    res <- Hmisc::rcorr(as.matrix(data), type = rcorr_type) #for corr plot
+    # corrplot
+    corrected_pvals <- p.adjust(res$P, method = p.adjust_method)
+    corrected_pvals <- matrix(corrected_pvals, nrow = ncol(res$P), 
+        ncol = ncol(res$P))
+    colnames(corrected_pvals)<- colnames(res$P)
+    rownames(corrected_pvals)<- rownames(res$P)
+
+    res$P <- corrected_pvals
+
+    res    
+}
+
+idx <- c(15, 17:31, 33:35, 37:51)
+
+
+# Bulk
+co_bulk <- corr_f(annot_df[,idx])
+
+# By cell subtype
+
+## Endothelial
+k <- which(annot_df$cell_type_A == 'Endothelial')
+co_endo <- corr_f(annot_df[k,idx])
+
+## Epithelial
+k <- which(annot_df$cell_type_A == 'Epithelial')
+co_epi <- corr_f(annot_df[k,idx])
+
+## Fib_mes
+k <- which(annot_df$cell_type_B == 'Fib_Mesenchymal')
+co_fmes <- corr_f(annot_df[k,idx])
+
+## CD4 T
+k <- which(annot_df$subtype_A == 'Th_cells')
+co_th <- corr_f(annot_df[k,idx])
+
+## CD8 T
+k <- which(annot_df$subtype_A == 'Tc_cells')
+co_tc <- corr_f(annot_df[k,idx])
+
+## DN T
+k <- which(annot_df$subtype_A == 'DNT_cells')
+co_dnt <- corr_f(annot_df[k,idx])
+
+## Myeloid
+k <- which(annot_df$subtype_A == 'Myeloid')
+co_mye <- corr_f(annot_df[k,idx])
+
+## NK
+k <- which(annot_df$subtype_A == 'NK_cells')
+co_nk <- corr_f(annot_df[k,idx])
+
+## Other immune
+k <- which(annot_df$subtype_A == 'Other_immune')
+co_oimm <- corr_f(annot_df[k,idx])
+
+dir <- '/Users/senosam/Documents/Massion_lab/CyTOF_summary/both'
+save(co_bulk, co_epi, co_endo, co_fmes, co_th, co_tc, co_dnt, co_mye, co_nk, co_oimm, file = file.path(dir,'protein_correlations.RData'))
 
 ###############################################################################
 # ***Only for first 11 tumors***

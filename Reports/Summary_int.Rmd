@@ -65,6 +65,16 @@ load("/Users/senosam/Documents/Massion_lab/RNASeq_summary/rnaseq.RData")
 ls_preprocessed <- preprocess_rna(path_rnaseq = '/Users/senosam/Documents/Massion_lab/RNASeq_summary/rnaseq.RData', correct_batch = T, correct_gender = T)
 p_all <- p_all[which(p_all$Vantage_ID %in% colnames(ls_preprocessed$vsd_mat)),]
 p_all <- p_all[match(ref$pt_ID, p_all$pt_ID),]
+rna_all <- ls_preprocessed$rna_all[,c(1:7,na.omit(match(p_all$Vantage_ID,
+                                                colnames(ls_preprocessed$rna_all)[8:ncol(ls_preprocessed$rna_all)])))]
+pData_rnaseq <- ls_preprocessed$pData_rnaseq[na.omit(match(p_all$pt_ID, ls_preprocessed$pData_rnaseq$pt_ID)),]
+counts_all <- ls_preprocessed$counts_all[,na.omit(match(p_all$Vantage_ID, colnames(ls_preprocessed$counts_all)))]
+vsd_mat <- ls_preprocessed$vsd_mat[,na.omit(match(p_all$Vantage_ID, colnames(ls_preprocessed$vsd_mat)))]
+ls_preprocessed2 <- list(p_all=na.omit(p_all), 
+                         rna_all=rna_all, 
+                         pData_rnaseq=pData_rnaseq, 
+                         counts_all=counts_all, 
+                         vsd_mat=vsd_mat)
 
 # CLUST EIGEN GENES
 clust_eigen <- data.frame(read_tsv('/Users/senosam/Documents/Massion_lab/RNASeq_summary/Results_23_Sep_20_2/Eigengenes.tsv'))
@@ -98,6 +108,10 @@ vsd_matTOP_ENSEMBL <- t(vsd_matTOP_ENSEMBL)
 vsd_matTOP_ENSEMBL <- data.frame(vsd_matTOP_ENSEMBL[match(p_all$Vantage_ID, 
                                                           rownames(vsd_matTOP_ENSEMBL)),])
 rownames(vsd_matTOP_ENSEMBL) <- ref$pt_ID
+
+vsd_mat <- t(vsd_mat)
+vsd_mat <- data.frame(vsd_mat[match(p_all$Vantage_ID, rownames(vsd_mat)),])
+rownames(vsd_mat) <- ref$pt_ID
 
 # DECONVOLUTION
 xcell_dcv <- data.frame(t(read.delim("~/Documents/Massion_lab/RNASeq_summary/deconvolution/output/rna_only/XCELL/xCell_rnaseq_fpkm_xCell_1132060320.txt", row.names=1)))
@@ -155,13 +169,13 @@ CDE_TMA36['cluster'] <- km$cluster
 ha = HeatmapAnnotation(
     Cluster = as.factor(CDE_TMA36$cluster),
     #CANARY = as.factor(CDE_TMA36$CANARY),
-    SILA = CDE_TMA36$SILA,
+    #SILA = CDE_TMA36$SILA,
     MUT = CDE_TMA36$mut,
     Smoking = CDE_TMA36$Smoking_Status,
-    Stage_S = CDE_TMA36$Stages_simplified,
-    Stage =  CDE_TMA36$X8th_ed_path_stage,
-    Sex =  CDE_TMA36$Gender,
-    DRP = CDE_TMA36$DRP_st,
+    #Stage_S = CDE_TMA36$Stages_simplified,
+    #Stage =  CDE_TMA36$X8th_ed_path_stage,
+    #Sex =  CDE_TMA36$Gender,
+    #DRP = CDE_TMA36$DRP_st,
     
     simple_anno_size = unit(0.5, "cm")
 )
@@ -231,6 +245,43 @@ ggplot(x_sila, aes(x=cluster_ID, y=value, fill=cluster_ID)) +
 ```
 
 ```{r}
+x_sila <- cbind('cluster_ID' = as.factor(CDE_TMA36$cluster), 'SILA' = CDE_TMA36$SILA)
+x_sila <- data.frame(na.omit(x_sila))
+x_sila <- reshape2::melt(x_sila,  id.vars = c('cluster_ID'))
+x_sila$cluster_ID <- as.factor(x_sila$cluster_ID)
+
+ggplot(x_sila, aes(x=cluster_ID, y=value, fill=cluster_ID)) + 
+    geom_violin(trim=FALSE) +
+    geom_boxplot(width=0.1, fill="white") +
+    labs(title=paste0("SILA score"),x="pt group", y = "SILA score") +
+    scale_fill_brewer(palette="Dark2") + theme_minimal() +
+    ggsignif::geom_signif(comparisons = list(c("1", "2"), c("2", "3"), c("1", "3")),   
+                map_signif_level=TRUE)
+
+x_sila %>%
+  ggplot( aes(x=cluster_ID, y=value, fill=cluster_ID)) +
+    geom_boxplot() +
+    scale_fill_manual(values = c("green", "turquoise1", "blue"))+
+    #scale_fill_viridis(discrete = TRUE, alpha=0.6) +
+    geom_jitter(color="black", size=0.4, alpha=0.9) +
+    #theme_ipsum() +
+    theme_classic() +
+    theme(
+      legend.position="none",
+      plot.title = element_text(size=11),
+      axis.text.x = element_text(size=25, face="bold"),
+      axis.text.y = element_text(size=16),
+      axis.title.x = element_text(size = 16),
+      axis.title.y = element_text(size = 16)
+    ) +
+    #ggtitle("A boxplot with jitter") +
+    ylab("SILA score") +
+    xlab("Cluster ID")
+
+
+```
+
+```{r}
 x_nsize <- cbind('cluster_ID' = as.factor(CDE_TMA36$cluster), 'SILA' = CDE_TMA36$Path_Nodule_Size_cm)
 x_nsize <- data.frame(na.omit(x_nsize))
 x_nsize <- reshape2::melt(x_nsize,  id.vars = c('cluster_ID'))
@@ -277,10 +328,12 @@ for (i in clust_nm){
 ```{r}
 hladr_a <- 'ENSG00000204287'
 hladr_b1 <- 'ENSG00000196126'
+inf_g <- 'ENSG00000111537'
 
 x_HLA <- cbind('cluster_ID' = as.factor(CDE_TMA36$cluster), 
                'HLADR_A' = vsd_matTOP_ENSEMBL[,grep(hladr_a, colnames(vsd_matTOP_ENSEMBL))], 
-               'HLADR_B1' = vsd_matTOP_ENSEMBL[,grep(hladr_b1, colnames(vsd_matTOP_ENSEMBL))])
+               'HLADR_B1' = vsd_matTOP_ENSEMBL[,grep(hladr_b1, colnames(vsd_matTOP_ENSEMBL))],
+               'INF_G' = vsd_matTOP_ENSEMBL[,grep(inf_g, colnames(vsd_matTOP_ENSEMBL))])
 x_HLA <- data.frame(na.omit(x_HLA))
 x_HLA <- reshape2::melt(x_HLA,  id.vars = c('cluster_ID'))
 x_HLA$cluster_ID <- as.factor(x_HLA$cluster_ID)
@@ -430,3 +483,177 @@ ggplot(sila_mut, aes(x=mut, y=value, fill=mut)) +
 
 
 ## DGE analysis
+
+```{r}
+p_all_cl <- ls_preprocessed2$p_all
+cl <- na.omit(CDE_TMA36[, c('pt_ID', 'cluster')])
+cl$pt_ID <- as.character(cl$pt_ID)
+p_all_cl <- p_all_cl %>% 
+              inner_join(., cl, "pt_ID") %>%
+              mutate_all(as.character)
+p_all_cl['Gender'] <- ls_preprocessed2$pData_rnaseq$Gender
+
+```
+
+```{r}
+DE_res_1v2 <- DE_analysis(ls_preprocessed2, 
+           GeneBased=FALSE, 
+           pDataBased=FALSE,
+           NewCondition=TRUE,
+           NewCondition_df = p_all_cl,
+           cond_nm='cluster',
+           two_levels=c('1','2'),
+           reference = '1',
+           correct_gender=TRUE)
+
+DE_res_1v3 <- DE_analysis(ls_preprocessed2, 
+           GeneBased=FALSE, 
+           pDataBased=FALSE,
+           NewCondition=TRUE,
+           NewCondition_df = p_all_cl,
+           cond_nm='cluster',
+           two_levels=c('1','3'),
+           reference = '1',
+           correct_gender=TRUE)
+
+DE_res_3v2 <- DE_analysis(ls_preprocessed2, 
+           GeneBased=FALSE, 
+           pDataBased=FALSE,
+           NewCondition=TRUE,
+           NewCondition_df = p_all_cl,
+           cond_nm='cluster',
+           two_levels=c('3','2'),
+           reference = '3',
+           correct_gender=TRUE)
+```
+
+```{r}
+heatmap_200(DE_res_1v2$res_df, DE_res_1v2$vsd_mat_sym, DE_res_1v2$meta_data, DE_res_1v2$pData_rnaseq)
+volcano_plot(DE_res_1v2$res_df, gene=NULL, p_title='Clusters: 1 vs 2')
+
+heatmap_200(DE_res_1v3$res_df, DE_res_1v3$vsd_mat_sym, DE_res_1v3$meta_data, DE_res_1v3$pData_rnaseq)
+volcano_plot(DE_res_1v3$res_df, gene=NULL, p_title='Clusters: 1 vs 3')
+
+heatmap_200(DE_res_3v2$res_df, DE_res_3v2$vsd_mat_sym, DE_res_3v2$meta_data, DE_res_3v2$pData_rnaseq)
+volcano_plot(DE_res_3v2$res_df, gene=NULL, p_title='Clusters: 3 vs 2')
+```
+
+```{r}
+fgsea_res_1v2 <- fgsea_analysis(DE_res_1v2)
+fgsea_res_1v3 <- fgsea_analysis(DE_res_1v3)
+fgsea_res_3v2 <- fgsea_analysis(DE_res_3v2)
+```
+
+### Clusters: 1 vs 2
+```{r}
+fgsea_res <- fgsea_res_1v2
+cond_nm <- 'Clusters: 1 vs 2'
+fgsea_plot(fgsea_res$res_hm, pathways_title='Hallmark', condition_name= cond_nm)
+fgsea_plot(fgsea_res$res_c1, pathways_title='C1 positional genes', condition_name= cond_nm)
+fgsea_plot(fgsea_res$res_c2, pathways_title='C2 curated genes', condition_name= cond_nm)
+fgsea_plot(fgsea_res$res_c3, pathways_title='C3 regulatory target genes', condition_name= cond_nm)
+fgsea_plot(fgsea_res$res_c4, pathways_title='C4 cancer', condition_name= cond_nm)
+fgsea_plot(fgsea_res$res_c5, pathways_title='C5 GO genes', condition_name= cond_nm)
+fgsea_plot(fgsea_res$res_c6, pathways_title='C6 oncogenic', condition_name= cond_nm)
+fgsea_plot(fgsea_res$res_c7, pathways_title='C7 immunologic', condition_name= cond_nm)
+fgsea_plot(fgsea_res$res_msg, pathways_title='All signatures', condition_name= cond_nm)
+
+```
+
+### Clusters: 1 vs 3
+```{r}
+fgsea_res <- fgsea_res_1v3
+cond_nm <- 'Clusters: 1 vs 3'
+fgsea_plot(fgsea_res$res_hm, pathways_title='Hallmark', condition_name= cond_nm)
+fgsea_plot(fgsea_res$res_c1, pathways_title='C1 positional genes', condition_name= cond_nm)
+fgsea_plot(fgsea_res$res_c2, pathways_title='C2 curated genes', condition_name= cond_nm)
+fgsea_plot(fgsea_res$res_c3, pathways_title='C3 regulatory target genes', condition_name= cond_nm)
+fgsea_plot(fgsea_res$res_c4, pathways_title='C4 cancer', condition_name= cond_nm)
+fgsea_plot(fgsea_res$res_c5, pathways_title='C5 GO genes', condition_name= cond_nm)
+fgsea_plot(fgsea_res$res_c6, pathways_title='C6 oncogenic', condition_name= cond_nm)
+fgsea_plot(fgsea_res$res_c7, pathways_title='C7 immunologic', condition_name= cond_nm)
+fgsea_plot(fgsea_res$res_msg, pathways_title='All signatures', condition_name= cond_nm)
+
+```
+
+### Clusters: 3 vs 2
+```{r}
+fgsea_res <- fgsea_res_3v2
+cond_nm <- 'Clusters: 3 vs 2'
+fgsea_plot(fgsea_res$res_hm, pathways_title='Hallmark', condition_name= cond_nm)
+fgsea_plot(fgsea_res$res_c1, pathways_title='C1 positional genes', condition_name= cond_nm)
+fgsea_plot(fgsea_res$res_c2, pathways_title='C2 curated genes', condition_name= cond_nm)
+fgsea_plot(fgsea_res$res_c3, pathways_title='C3 regulatory target genes', condition_name= cond_nm)
+fgsea_plot(fgsea_res$res_c4, pathways_title='C4 cancer', condition_name= cond_nm)
+fgsea_plot(fgsea_res$res_c5, pathways_title='C5 GO genes', condition_name= cond_nm)
+fgsea_plot(fgsea_res$res_c6, pathways_title='C6 oncogenic', condition_name= cond_nm)
+fgsea_plot(fgsea_res$res_c7, pathways_title='C7 immunologic', condition_name= cond_nm)
+fgsea_plot(fgsea_res$res_msg, pathways_title='All signatures', condition_name= cond_nm)
+
+```
+
+```{r}
+library(readr)
+library(ImmuneSubtypeClassifier)
+
+dat2 <- as.data.frame(t(na.omit(vsd_mat)))
+rownames(dat2) <- sapply(strsplit(rownames(dat2), "\\."), "[[", 1)
+res0 <- ImmuneSubtypeClassifier::callEnsemble(X = dat2, geneids = 'ensembl')
+res0
+
+```
+
+```{r}
+res <- res0[match(ref$pt_ID, res0$SampleIDs),]
+res['cluster_ID'] <- as.factor(CDE_TMA36$cluster)
+res['SILA'] <- CDE_TMA36$SILA
+res <- na.omit(res)
+table(res$BestCall[which(res$cluster == 3)])
+```
+
+```{r}
+x <- res
+rownames(x) <- x$SampleIDs
+x$SampleIDs <- NULL
+x$BestCall <- NULL
+x <- reshape2::melt(x,  id.vars = c('cluster_ID'))
+
+violin_deconv <- function(x, ct) {
+  x_sub <- x[which(x$variable == ct),]
+  dp <- ggplot(x_sub, aes(x=cluster_ID, y=value, fill=cluster_ID)) + 
+    geom_violin(trim=FALSE) +
+    geom_boxplot(width=0.1, fill="white") +
+    labs(title=paste0(ct, " - Immune Signature"),x="pt group", y = "Enrichment score") +
+    scale_fill_brewer(palette="Dark2") + theme_minimal() +
+    ggsignif::geom_signif(comparisons = list(c("1", "2"), c("2", "3"), c("1", "3")),   
+                map_signif_level=TRUE)
+  dp
+}
+
+for (i in 1:6){
+  plot(violin_deconv(x, ct = i))
+}
+```
+
+```{r echo=FALSE, fig.width = 8, fig.height = 3}
+m_cytof_rna <- read.csv('/Users/senosam/Documents/Massion_lab/data_integration/ML/m_cytof_rna.csv', row.names = 1)
+m_cytof_rna <- m_cytof_rna[match(ref$pt_ID, rownames(m_cytof_rna)),]
+res <- res0[match(ref$pt_ID, res0$SampleIDs),]
+colnames(res) <- c(colnames(res)[1:2], paste0('sig_', colnames(res)[3:8]))
+res['cluster_ID'] <- as.factor(CDE_TMA36$cluster)
+res <- cbind(res, m_cytof_rna)
+res <- na.omit(res)
+ggpubr::ggscatter(res, x = "SILA_S", y = c('sig_1', 'sig_2', 'sig_3'),
+          add = "reg.line", conf.int = TRUE, combine = TRUE, scales='free',
+          cor.coef = TRUE, cor.method = "spearman", add.params = list(color = 'grey'),
+          xlab = "SILA Score", ylab = '')
+ggpubr::ggscatter(res, x = "SILA_S", y = c('sig_4', 'sig_5', 'sig_6'),
+          add = "reg.line", conf.int = TRUE, combine = TRUE, scales='free',
+          cor.coef = TRUE, cor.method = "spearman", add.params = list(color = 'grey'),
+          xlab = "SILA Score", ylab = '')
+
+ggpubr::ggscatter(res, x = 'sig_6', y = c('Epi_174Yb_HLA.DR', 'FMes_174Yb_HLA.DR', 'Endo_174Yb_HLA.DR'),
+          add = "reg.line", conf.int = TRUE, combine = TRUE, scales='free',
+          cor.coef = TRUE, cor.method = "spearman", add.params = list(color = 'grey'),
+          xlab = "SILA Score", ylab = '')
+```

@@ -112,7 +112,6 @@ corr_plot(prcnt_by_pt)
 ```
 
 ## Subtypes
-
 ### All subtypes
 
 ```{r, echo=FALSE}

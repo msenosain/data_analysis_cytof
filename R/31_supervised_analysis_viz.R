@@ -338,3 +338,61 @@ main_bp <- function(data, cond_col, celltype_col, cluster_col, celltype_nm, ptID
 
 }
 
+frac_hm <- function(prcnt_dt, CDE, class_col){
+    lb <- rep('Indolent', nrow(prcnt_dt))
+    lb[which(CDE[,class_col] == 'agg')] <- 'Aggressive'
+    levels = c('Indolent', 'Aggressive')
+    colr = list(Behavior = c('Indolent' = '#3498DB', 'Aggressive'= '#EC7063'))
+
+    if(length(unique(CDE[,class_col]))>2){
+        lb[which(CDE[,class_col] == 'int')] <- 'Intermediate'
+        levels = c('Indolent', 'Intermediate', 'Aggressive')
+        colr = list(Behavior = c('Indolent' = '#3498DB', 'Intermediate' = 'grey72', 'Aggressive'= '#EC7063'))
+    }
+    
+    ha = HeatmapAnnotation(
+        Behavior = factor(lb, levels = levels),
+        col = colr,
+        simple_anno_size = unit(0.5, "cm")
+    )
+    Heatmap(t(as.matrix(scale(prcnt_dt))), name = "z-score",
+            heatmap_legend_param = list(color_bar = "continuous"), 
+            row_names_gp = gpar(fontsize = 8),
+            column_names_gp = gpar(fontsize = 8),
+            column_split = lb,
+            top_annotation = ha)
+}
+
+
+frac_boxplot <- function(prcnt_dt, CDE, class_col){
+    lb <- rep('Indolent', nrow(prcnt_dt))
+    lb[which(CDE[,class_col] == 'agg')] <- 'Aggressive'
+    levels = c('Indolent', 'Aggressive')
+    comp =  list(c("Indolent", "Aggressive"))
+    colr = c("#3498DB", "#EC7063")
+
+    if(length(unique(CDE[,class_col]))>2){
+        lb[which(CDE[,class_col] == 'int')] <- 'Intermediate'
+        levels = c('Indolent', 'Intermediate', 'Aggressive')
+        comp =  list(c("Indolent", "Aggressive"), c("Indolent", "Intermediate"), c("Intermediate", "Aggressive"))
+        colr = c("#3498DB", "grey72","#EC7063")
+    }    
+
+    prcnt_dt['Behavior'] <- factor(lb, levels = levels)
+    prcnt_dt['pt_ID'] <- CDE$pt_ID
+    prcnt_dt <- reshape2::melt(prcnt_dt, id.vars = c("pt_ID", "Behavior"))
+    colnames(prcnt_dt)[4] <- 'Fraction'
+
+    ggplot(prcnt_dt, aes(x=Behavior, y=Fraction, color = Behavior)) +
+        geom_boxplot() +
+        ylim(0,1)+
+        ggsignif::geom_signif(comparisons = comp, 
+           map_signif_level=TRUE) +
+        facet_wrap(~variable, scales='free') +
+        theme(plot.title = element_text(hjust = 0.5, size=22))+
+        scale_color_manual(values=colr, name = "Behavior", labels = lb)
+
+}
+
+
+hm_median

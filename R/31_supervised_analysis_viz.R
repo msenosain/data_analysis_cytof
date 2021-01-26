@@ -43,6 +43,9 @@ dendrogram_barplot <- function(data, dist_method = 'euclidean',
 
 }
 
+###############################################################################
+# UMAP
+###############################################################################
 
 ClusterUMAP_plot <- function(data, 
                              density = F,
@@ -97,7 +100,7 @@ ClusterUMAP_plot <- function(data,
     
     p_cl <- ggplot(test) + 
       geom_point(aes_string(x='UMAP1', y='UMAP2', colour = test[,cluster_col]), 
-                 shape = 19, size = 0.01, alpha = 0.4) +
+                 shape = 19, size = 0.3, alpha = 0.4) +
       ggtitle(plot_title) +
       theme_bw()+
       theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
@@ -152,7 +155,7 @@ ClusterUMAP_plot <- function(data,
     pl <- list()
     for(i in seq_along(var_list)) {
       p <- ggplot(subset(test,test$variable==var_list[i]), aes(x=UMAP1, y=UMAP2, colour = value)) + 
-        geom_point(shape = 20, alpha=0.4, size = 0.5) + 
+        geom_point(shape = 20, alpha=0.4, size = 0.3) + 
         theme_bw() + 
         ggtitle(sapply(strsplit(as.character(var_list[i]), "_"), "[[", 2)) + 
         scale_colour_gradient(low = "grey72", high = "blue") +
@@ -177,7 +180,7 @@ ClusterUMAP_plot <- function(data,
     
     p_cl <- ggplot(test) + 
       geom_point(aes_string(x='UMAP1', y='UMAP2', colour = test[,cluster_col]), 
-                 shape = 20, size = 0.2, alpha = 0.4) +
+                 shape = 20, size = 0.3, alpha = 0.4) +
       ggtitle(plot_title) +
       theme_bw()+
       scale_colour_gradient2(low = "#3498DB", mid= 'white', high = "#EC7063", midpoint = 0.5) +
@@ -201,5 +204,137 @@ ClusterUMAP_plot <- function(data,
   
   return(p_cl)
   }  
+}
+
+
+###############################################################################
+# BARPLOTS of subtypes
+###############################################################################
+
+ClassDistribution <- function(data, cond_col, celltype_col, cluster_col, celltype_nm, ptID_col){
+    data <- data[which(data[,celltype_col] == celltype_nm), ]
+    
+    # Computing table of cluster %by behavior condition
+    clust <- unique(data[,cluster_col])
+    cond <- unique(data[,cond_col])
+    prcnt_cond <- data.frame(matrix(nrow = length(clust), ncol = length(cond) , dimnames=list(clust, cond)))
+    
+    for(i in 1:nrow(prcnt_cond)){
+      k <- which(data[,cluster_col] == clust[i])
+      k <- table(data[k,cond_col])/length(k)
+      k <- k[cond]
+      k[is.na(k)] <- 0
+      prcnt_cond[i,] <- k
+    }
+
+    # Computing table of cluster cell number by behavior condition
+    num_clus <- data.frame(matrix(nrow = length(clust), ncol = 1 , dimnames=list(clust, 'cell_num')))
+    for(i in 1:nrow(num_clus)){
+      k <- length(which(data[,cluster_col] == clust[i]))
+      num_clus[i,1] <- k
+    }
+
+    # Computing table of cluster by patient
+    ptids <- unique(data[,ptID_col])
+    prcnt_pt <- data.frame(matrix(nrow = length(clust), ncol = length(ptids) , dimnames=list(clust, ptids)))
+    for(i in 1:nrow(prcnt_pt)){
+      k <- which(data[,cluster_col] == clust[i])
+      k <- table(data[k,ptID_col])/length(k)
+      k <- k[ptids]
+      k[is.na(k)] <- 0
+      prcnt_pt[i,] <- k
+    }
+
+    res <- list("prcnt_cond"=prcnt_cond, "num_clus"=num_clus, "prcnt_pt"=prcnt_pt)
+
+    # create a list with objetcs                  
+    return(res)
+}
+
+
+
+bp_stclusters <- function(dt, celltype_nm_plot, plot_type, plotly_p = TRUE){
+    library(reshape2)
+    library(ggplot2)
+    library(RColorBrewer)
+    library(plotly)
+    if(!(plot_type %in% c('cond_frac', 'pt_frac', 'cell_num'))){
+        stop('error')
+    }
+
+    dt['cluster'] <- sapply(strsplit(rownames(dt), "_"), "[[", 2)
+    dt <- melt(dt, id.vars = c( "cluster"))
+    dt$cluster <- factor(dt$cluster, levels = sort(as.numeric(unique(dt$cluster)), decreasing=T))
+
+
+    if(plot_type == 'cond_frac'){
+        if(length(unique(dt$variable))>2){
+            dt$variable <- factor(dt$variable, levels = c('ind', 'int', 'agg'))
+            col <- c("#3498DB", "grey72", "#EC7063")
+            lb <- c("Indolent", "Intermediate", "Aggressive")
+        } else {
+            dt$variable <- factor(dt$variable, levels = c('ind', 'agg'))
+            col <- c("#3498DB", "#EC7063")
+            lb <- c("Indolent", "Aggressive")
+        }
+        p <- ggplot(dt, aes(fill=variable, y=value, x=cluster)) + 
+                geom_bar(position="fill", stat="identity") +
+                coord_flip() +
+                scale_fill_manual(values=col, name = "Behavior", labels = lb) +
+                xlab(celltype_nm_plot) + 
+                ylab("Fraction of cells") +
+                theme_minimal()+
+                theme(legend.position="top")+
+                guides(fill=guide_legend(title.position = "top", title.hjust=0.5))           
+    }
+
+    if(plot_type == 'pt_frac'){
+        dt$variable <- as.character(sapply(strsplit( as.character(unique(dt$variable)), "X"), "[[", 2))
+        set.seed(101)
+        n <- length(unique(dt$variable))
+        qual_col_pals <- brewer.pal.info[brewer.pal.info$category == 'qual',]
+        col <- unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals))) 
+        lb <- unique(dt$variable)
+        p <- ggplot(dt, aes(fill=variable, y=value, x=cluster)) + 
+                geom_bar(position="fill", stat="identity") +
+                coord_flip() +
+                scale_fill_manual(values=col, name = "Patient", labels = lb) +
+                xlab(celltype_nm_plot) + 
+                ylab("Fraction of cells") +
+                theme_minimal()+
+                theme(legend.position="top")+
+                guides(fill=guide_legend(ncol=10, title.position = "top", title.hjust=0.5))
+    }
+
+    if(plot_type == 'cell_num'){
+        p <- ggplot(dt, aes(x=cluster, y=value)) +
+                geom_bar(stat="identity", fill="#07315e")+
+                theme_minimal() +
+                coord_flip() +
+                xlab(celltype_nm_plot) + 
+                ylab("Number of cells")
+    }
+
+    if(plotly_p){
+        p <- ggplotly(p)
+    }
+    return(p)
+
+}
+
+main_bp <- function(data, cond_col, celltype_col, cluster_col, celltype_nm, ptID_col, celltype_nm_plot, plotly_p = T){
+
+    dt_ls <- ClassDistribution(
+        data = data, 
+        cond_col = cond_col, 
+        celltype_col = celltype_col, 
+        cluster_col = cluster_col, 
+        celltype_nm = celltype_nm, 
+        ptID_col = ptID_col)
+    #print(dt_ls)
+    print(bp_stclusters(dt=dt_ls$prcnt_cond, celltype_nm_plot=celltype_nm_plot, plot_type='cond_frac', plotly_p = plotly_p))
+    print(bp_stclusters(dt=dt_ls$prcnt_pt, celltype_nm_plot=celltype_nm_plot, plot_type='pt_frac', plotly_p = plotly_p))
+    print(bp_stclusters(dt=dt_ls$num_clus, celltype_nm_plot=celltype_nm_plot, plot_type='cell_num', plotly_p = plotly_p))
+
 }
 

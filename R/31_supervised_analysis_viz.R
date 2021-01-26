@@ -395,4 +395,67 @@ frac_boxplot <- function(prcnt_dt, CDE, class_col){
 }
 
 
-hm_median
+hm_median <- function(data){
+    source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/20_ClustAnnot_functions.R")
+    data$cluster <- as.numeric(gsub(".*_",  "",data$cluster))
+    data <- ClusterEval_data(data[,1:(ncol(data)-2)], eval_type = 'heatmap')
+    colnames(data) <- gsub(".*_",  "",colnames(data))
+
+    library(gplots)
+    scale_max = max(data)
+    heat_palette_med <- colorRampPalette(c("black", "yellow","#FAF7C9"))
+    pairs.breaks_med <- c(seq(0, scale_max/6.6, by = 0.1),
+                          seq(scale_max/6.6, scale_max/3.3, by = 0.1),
+                          seq(scale_max/3.3, scale_max, by = 0.1))
+
+    heatmap.2(data,
+              main = "Median protein expression",
+              dendrogram = "both",
+              Rowv = TRUE,
+              Colv = TRUE,
+              breaks = pairs.breaks_med,
+              revC = FALSE,
+              symkey = FALSE,
+              symbreaks = FALSE,
+              scale = "none",
+              cexRow = 1.2,
+              cexCol = 1.2,
+              key = TRUE,
+              col = heat_palette_med,
+              trace = "none",
+              density.info = 'none',
+              sepcolor="#424242",
+              margins = c(7,3),
+              colsep=1:ncol(data),
+              rowsep=1:nrow(data),
+              sepwidth=c(0.005,0.005),
+              keysize = 1.2,
+              key.title = 'Intensity',
+              key.xlab= "Arcsinh Transform",
+              extrafun = box(lty = "solid"),
+              srtCol=90,
+              lhei=c(1,4), lwid=c(5,25))
+
+}
+
+protein_corr <- function(corr_ls) {
+    par(cex=0.9) # size
+    par(lwd = 1.2) # line width
+    r <- corr_ls$r
+    pv <- corr_ls$P
+    colnames(r) <- gsub(".*_",  "",colnames(r))
+    rownames(r) <- colnames(r)
+    corrplot::corrplot(r, type="upper", order='original', tl.col = "black", 
+        tl.srt = 45, p.mat = pv , sig.level = 0.05, 
+        insig = "blank", method = 'color', addCoef.col="black", 
+        number.font = 1, number.cex = 0.8, addgrid.col = 'grey', tl.cex = 1)  
+}
+
+hist_prot <- function(data){
+    data <- data[,1:(ncol(data)-2)]
+    colnames(data) <- gsub(".*_",  "",colnames(data))
+    data <- reshape2::melt(data,  id.vars = c('cluster'))
+    data$cluster <- as.factor(data$cluster)
+    ggplot(data, aes(x=value, group=cluster, color=cluster)) +
+        geom_density(adjust=1.5) + facet_wrap( ~ variable, scales="free")
+}

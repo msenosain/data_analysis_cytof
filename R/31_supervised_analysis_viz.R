@@ -100,7 +100,7 @@ ClusterUMAP_plot <- function(data,
     
     p_cl <- ggplot(test) + 
       geom_point(aes_string(x='UMAP1', y='UMAP2', colour = test[,cluster_col]), 
-                 shape = 19, size = 0.3, alpha = 0.4) +
+                 shape = 20, size = 0.8, alpha = 0.4) +
       ggtitle(plot_title) +
       theme_bw()+
       theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
@@ -180,7 +180,7 @@ ClusterUMAP_plot <- function(data,
     
     p_cl <- ggplot(test) + 
       geom_point(aes_string(x='UMAP1', y='UMAP2', colour = test[,cluster_col]), 
-                 shape = 20, size = 0.3, alpha = 0.4) +
+                 shape = 20, size = 0.8, alpha = 0.4) +
       ggtitle(plot_title) +
       theme_bw()+
       scale_colour_gradient2(low = "#3498DB", mid= 'white', high = "#EC7063", midpoint = 0.5) +

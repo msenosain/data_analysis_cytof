@@ -356,7 +356,9 @@ frac_hm <- function(prcnt_dt, CDE, class_col){
         col = colr,
         simple_anno_size = unit(0.5, "cm")
     )
-    Heatmap(t(as.matrix(scale(prcnt_dt))), name = "z-score",
+    dt <- t(as.matrix(scale(prcnt_dt)))
+    dt[is.na(dt)] <- 0
+    Heatmap(dt, name = "z-score",
             heatmap_legend_param = list(color_bar = "continuous"), 
             row_names_gp = gpar(fontsize = 8),
             column_names_gp = gpar(fontsize = 8),
@@ -387,7 +389,7 @@ frac_boxplot <- function(prcnt_dt, CDE, class_col){
 
     ggplot(prcnt_dt, aes(x=Behavior, y=Fraction, color = Behavior)) +
         geom_boxplot() +
-        ylim(0,1)+
+        #ylim(0,1)+
         ggsignif::geom_signif(comparisons = comp, 
            map_signif_level=TRUE) +
         facet_wrap(~variable, scales='free') +

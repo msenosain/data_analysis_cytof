@@ -1,0 +1,900 @@
+---
+title: "TMA36 CyTOF dataset: Indolent vs. Intermediate vs. Aggressive"
+author: "Mafe Senosain"
+date: "`r Sys.Date()`"
+output:
+    html_document:
+        toc: true
+        toc_float: true
+---
+
+```{r setup, include=FALSE}
+library(ggplot2)
+library(RColorBrewer)
+library(gridExtra)
+library(reshape2)
+library(jcolors)
+library(ComplexHeatmap)
+knitr::opts_chunk$set(echo = FALSE)
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/31_supervised_analysis_viz.R")
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/20_ClustAnnot_functions.R")
+```
+
+```{r, echo=FALSE}
+# Load data
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/cellclusters.RData")
+ref <- ref[-42,] # sample 13376 has been collected twice and will be merged, only one ref is needed
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/percent_pt.RData")
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/protein_correlations.RData")
+```
+
+```{r, echo=FALSE}
+# Clinical data
+CDE <- read.csv(file = '/Users/senosam/Documents/Massion_lab/CyTOF_summary/CDE_TMA36_2021JAN13_SA_MF.csv')
+```
+
+```{r, echo=FALSE}
+CDE <- CDE[match(ref$pt_ID, CDE$pt_ID),] # Select only pts with CyTOF data
+```
+
+```{r, echo=FALSE}
+# Add new class and SILA to annot_df
+pts = unique(annot_df$pt_ID)
+annot_df['SILA'] <- NA
+annot_df['n_op2'] <- NA
+for (i in pts) {
+    k <- which(annot_df$pt_ID == i)
+    annot_df[k, 'SILA'] <- CDE[which(CDE$pt_ID == i), 'SILA']
+    annot_df[k, 'n_op2'] <- CDE[which(CDE$pt_ID == i), 'n_op2']
+}
+```
+# 1. Entire data set
+
+## 1.1 UMAPs 
+```{r}
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/supervised/UMAP_allcelltypes.RData")
+```
+
+```{r, echo=FALSE}
+# By density, cluster, patient
+#plot_colors
+m_ct <- c("#FA0000", "#207BBB", "#00B84C", "#999999")
+s_ct <- c("#f0dc78", "#FA0000", "#207BBB", "#00B84C", "#631461", "#966995", "#c9c9c9", "#FF7500" ,"#FF6BBC")
+nop2 <- c("#EC7063", "#3498DB", "grey72")
+
+x_lim <- c(min(umap_smp$UMAP1)-1, max(umap_smp$UMAP1)+1)
+y_lim <- c(min(umap_smp$UMAP2)-1, max(umap_smp$UMAP2)+1)
+
+set.seed(101)
+qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
+col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+#pie(rep(1,n), col=sample(col_vector, n))
+
+
+ClusterUMAP_plot(umap_smp, density = T, color_by_cluster = F, color_by_protein = F, pallete = F,
+                 plot_clusnames = F, plot_title = 'Density', x_lim = x_lim, y_lim = y_lim)
+ClusterUMAP_plot(umap_smp, color_by_cluster = T, color_by_protein = F, pallete = F,
+                 cluster_col = 'cell_type_B', plot_clusnames = F, plot_title = 'Cell identity',
+                 plot_colors = m_ct, lg_names = levels(umap_smp$cell_type_B),  x_lim = x_lim, y_lim = y_lim)
+ClusterUMAP_plot(umap_smp, color_by_cluster = T, color_by_protein = F, pallete = F,
+                 cluster_col = 'subtype_B', plot_clusnames = F, plot_title = 'Cell identity',
+                 plot_colors = s_ct, lg_names = levels(as.factor(umap_smp$subtype_B)),  x_lim = x_lim, y_lim = y_lim)
+ClusterUMAP_plot(umap_smp, color_by_cluster = T, color_by_protein = F, pallete = F,
+                 cluster_col = 'n_op2', plot_clusnames = F, plot_title = 'Behavior class',
+                 plot_colors = nop2, lg_names = levels(umap_smp$n_op2),  x_lim = x_lim, y_lim = y_lim)
+ClusterUMAP_plot(umap_smp, color_by_cluster = F, color_by_protein = F, color_by_continuous = T, pallete = F,
+                 cluster_col = 'SILA', plot_clusnames = F, plot_title = 'SILA score',
+                 plot_colors = nop2,  x_lim = x_lim, y_lim = y_lim)
+ClusterUMAP_plot(umap_smp, color_by_cluster = T, color_by_protein = F, pallete = F, plot_colors = col_vector,
+                 cluster_col = 'pt_ID', plot_clusnames = F, plot_title = 'Patient ID',
+                 lg_names = levels(as.factor(umap_smp$pt_ID)),  x_lim = x_lim, y_lim = y_lim)
+
+```
+
+```{r, echo=FALSE, fig.width = 10, fig.height = 5}
+x <- c(15,20,29:31,34,37,40,44,46,47,50)
+ClusterUMAP_plot(umap_smp, color_by_cluster = F, color_by_protein = T, 
+                 ft_cols = x, plot_clusnames = F, x_lim = x_lim, y_lim = y_lim, 
+                 nrow_prot = 2, heights_prot = unit(c(2,2), c("in", "in")))
+```
+
+### UMAP of Indolent cells only
+
+```{r, echo=FALSE}
+k <- which(umap_smp$n_op2 == 'ind')
+umap_smp_i <- umap_smp[k,]
+ClusterUMAP_plot(umap_smp_i, density = T, color_by_cluster = F, color_by_protein = F, pallete = F,
+                 plot_clusnames = F, plot_title = 'Density', x_lim = c(-11,11), y_lim = c(-11,11))
+ClusterUMAP_plot(umap_smp_i, color_by_cluster = T, color_by_protein = F, pallete = F,
+                 cluster_col = 'cell_type_B', plot_clusnames = F, plot_title = 'Cell identity',
+                 plot_colors = m_ct, lg_names = levels(umap_smp_i$cell_type_B),  x_lim = c(-11,11), y_lim = c(-11,11))
+ClusterUMAP_plot(umap_smp_i, color_by_cluster = T, color_by_protein = F, pallete = F,
+                 cluster_col = 'subtype_B', plot_clusnames = F, plot_title = 'Cell identity',
+                 plot_colors = s_ct, lg_names = levels(as.factor(umap_smp_i$subtype_B)),  x_lim = c(-11,11), y_lim = c(-11,11))
+ClusterUMAP_plot(umap_smp_i, color_by_cluster = T, color_by_protein = F, pallete = F, plot_colors = col_vector,
+                 cluster_col = 'pt_ID', plot_clusnames = F, plot_title = 'Patient ID',
+                 lg_names = levels(as.factor(umap_smp_i$pt_ID)),  x_lim = c(-11,11), y_lim = c(-11,11))
+ClusterUMAP_plot(umap_smp_i, color_by_cluster = T, color_by_protein = F, pallete = F,
+                 cluster_col = 'n_op2', plot_clusnames = F, plot_title = 'Behavior class',
+                 plot_colors = c('#3498DB'), lg_names = c('indolent'),  x_lim = c(-11,11), y_lim = c(-11,11))
+
+```
+
+### UMAP of Aggressive cells only
+```{r, echo=FALSE}
+k <- which(umap_smp$n_op2 == 'agg')
+umap_smp_a <- umap_smp[k,]
+ClusterUMAP_plot(umap_smp_a, density = T, color_by_cluster = F, color_by_protein = F, pallete = F,
+                 plot_clusnames = F, plot_title = 'Density', x_lim = c(-11,11), y_lim = c(-11,11))
+ClusterUMAP_plot(umap_smp_a, color_by_cluster = T, color_by_protein = F, pallete = F,
+                 cluster_col = 'cell_type_B', plot_clusnames = F, plot_title = 'Cell identity',
+                 plot_colors = m_ct, lg_names = levels(umap_smp_a$cell_type_B),  x_lim = c(-11,11), y_lim = c(-11,11))
+ClusterUMAP_plot(umap_smp_a, color_by_cluster = T, color_by_protein = F, pallete = F,
+                 cluster_col = 'subtype_B', plot_clusnames = F, plot_title = 'Cell identity',
+                 plot_colors = s_ct, lg_names = levels(as.factor(umap_smp_a$subtype_B)),  x_lim = c(-11,11), y_lim = c(-11,11))
+ClusterUMAP_plot(umap_smp_a, color_by_cluster = T, color_by_protein = F, pallete = F, plot_colors = col_vector,
+                 cluster_col = 'pt_ID', plot_clusnames = F, plot_title = 'Patient ID',
+                 lg_names = levels(as.factor(umap_smp_a$pt_ID)),  x_lim = c(-11,11), y_lim = c(-11,11))
+ClusterUMAP_plot(umap_smp_a, color_by_cluster = T, color_by_protein = F, pallete = F,
+                 cluster_col = 'n_op2', plot_clusnames = F, plot_title = 'Behavior class',
+                 plot_colors = nop2, lg_names = c('aggressive'),  x_lim = c(-11,11), y_lim = c(-11,11))
+```
+
+## 1.2 Barplots of subtypes clusters
+Epithelial cancer cells
+```{r, echo=FALSE}
+main_bp(annot_df, cond_col='n_op2', celltype_col='subtype_B', cluster_col='clusters_B', celltype_nm='Epithelial', ptID_col = 'pt_ID', celltype_nm_plot = "Epithelial cancer cells", plotly_p = T)
+```
+Endothelial cells
+```{r, echo=FALSE}
+main_bp(annot_df, cond_col='n_op2', celltype_col='subtype_B', cluster_col='clusters_B', celltype_nm='Endothelial', ptID_col = 'pt_ID', celltype_nm_plot = "Endothelial", plotly_p = T)
+```
+Fibroblasts/Mesenchymal cells
+```{r, echo=FALSE}
+main_bp(annot_df, cond_col='n_op2', celltype_col='subtype_B', cluster_col='clusters_B', celltype_nm='Fib_Mesenchymal', ptID_col = 'pt_ID', celltype_nm_plot = "Fibroblasts/Mesenchymal cells", plotly_p = T)
+```
+CD4+ T cells
+```{r, echo=FALSE}
+main_bp(annot_df, cond_col='n_op2', celltype_col='subtype_B', cluster_col='clusters_B', celltype_nm='Th_cells', ptID_col = 'pt_ID', celltype_nm_plot = "CD4+ T cells", plotly_p = T)
+```
+CD8+ T cells
+```{r, echo=FALSE}
+main_bp(annot_df, cond_col='n_op2', celltype_col='subtype_B', cluster_col='clusters_B', celltype_nm='Tc_cells', ptID_col = 'pt_ID', celltype_nm_plot = "CD8+ T cells", plotly_p = T)
+```
+DN T cells
+```{r, echo=FALSE}
+main_bp(annot_df, cond_col='n_op2', celltype_col='subtype_B', cluster_col='clusters_B', celltype_nm='DNT_cells', ptID_col = 'pt_ID', celltype_nm_plot = "DN T cells", plotly_p = T)
+```
+Myeloid cells
+```{r, echo=FALSE}
+main_bp(annot_df, cond_col='n_op2', celltype_col='subtype_B', cluster_col='clusters_B', celltype_nm='Myeloid', ptID_col = 'pt_ID', celltype_nm_plot = "Myeloid cells", plotly_p = T)
+```
+NK cells
+```{r, echo=FALSE}
+main_bp(annot_df, cond_col='n_op2', celltype_col='subtype_B', cluster_col='clusters_B', celltype_nm='NK_cells', ptID_col = 'pt_ID', celltype_nm_plot = "NK cells", plotly_p = T)
+```
+
+
+## 1.3 Heatmaps by cell type proportion
+### 1.3.1 Main cell types
+```{r, echo=FALSE, fig.width = 10, fig.height = 3}
+frac_hm(prcnt_celltypes, CDE, 'n_op2')
+```
+### 1.3.2 All subtypes
+```{r, echo=FALSE, fig.width = 10, fig.height = 3}
+frac_hm(prcnt_subtypes, CDE, 'n_op2')
+```
+### 1.3.3 Stroma + immune subtypes
+```{r, echo=FALSE, fig.width = 10, fig.height = 3}
+rc_prcnt <- function(dt, col_rm){
+  dt[,col_rm]<- NULL
+  tt <- apply(dt, 1, sum)
+  dt <- dt/tt
+}
+
+x <- rc_prcnt(prcnt_subtypes, col_rm = 'Epithelial')
+frac_hm(x, CDE, 'n_op2')
+```
+### 1.3.4 Immune subtypes
+```{r, echo=FALSE, fig.width = 10, fig.height = 3}
+x <- rc_prcnt(prcnt_subtypes, col_rm = c('Epithelial', 'Endothelial', 'Fib_Mesenchymal'))
+frac_hm(x, CDE, 'n_op2')
+```
+
+## 1.4 Boxplots comparing cell type proportion
+### 1.4.1 Main cell types
+```{r, echo=FALSE}
+frac_boxplot(prcnt_celltypes, CDE, 'n_op2')
+```
+### 1.4.2 All subtypes
+```{r, echo=FALSE}
+frac_boxplot(prcnt_subtypes, CDE, 'n_op2')
+```
+### 1.4.3 All cell type clusters
+```{r, echo=FALSE, fig.width = 15, fig.height = 10}
+frac_boxplot(prcnt_clusters, CDE, 'n_op2')
+```
+
+# 2. In depth analysis by cell subtype
+
+## 2.1 Epithelial cancer cells (ECC)
+```{r, echo=FALSE}
+# load UMAP data
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/supervised/UMAP_epi.RData")
+# subset index
+st_nm <- 'Epithelial'
+k <- which(annot_df$subtype_B == st_nm)
+# ft cols
+ft_cols <- c(15,18,19,21:23,26,28,29,31,33,35,37,38,40,41,50,51)
+```
+
+### UMAPs
+```{r}
+nop2 <- c("#EC7063", "#3498DB", "grey72")
+
+x_lim <- c(min(umap_smp$UMAP1)-1, max(umap_smp$UMAP1)+1)
+y_lim <- c(min(umap_smp$UMAP2)-1, max(umap_smp$UMAP2)+1)
+
+#x and y lim based on UMAP1 and UMAP2 max and min
+library(scales)
+set.seed(101)
+qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
+col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+clus_col = hue_pal()(length(unique(umap_smp$clusters_B)))
+
+ClusterUMAP_plot(umap_smp, density = T, color_by_cluster = F, color_by_protein = F, pallete = F,
+                 plot_clusnames = F, plot_title = 'Density', x_lim = x_lim, y_lim = y_lim)
+
+ClusterUMAP_plot(umap_smp, color_by_cluster = T, color_by_protein = F, pallete = F,
+                 cluster_col = 'clusters_B', plot_clusnames = F, plot_title = 'Cluster identity',
+                 plot_colors = clus_col, lg_names = levels(umap_smp$clusters_B),   x_lim = x_lim, y_lim = y_lim)
+ClusterUMAP_plot(umap_smp, color_by_cluster = T, color_by_protein = F, pallete = F,
+                 cluster_col = 'n_op2', plot_clusnames = F, plot_title = 'Behavior class',
+                 plot_colors = nop2, lg_names = levels(umap_smp$n_op2),   x_lim = x_lim, y_lim = y_lim)
+ClusterUMAP_plot(umap_smp, color_by_cluster = F, color_by_protein = F, color_by_continuous = T, pallete = F,
+                 cluster_col = 'SILA', plot_clusnames = F, plot_title = 'SILA score',
+                 plot_colors = nop2,   x_lim = x_lim, y_lim = y_lim)
+ClusterUMAP_plot(umap_smp, color_by_cluster = T, color_by_protein = F, pallete = F, plot_colors = col_vector,
+                 cluster_col = 'pt_ID', plot_clusnames = F, plot_title = 'Patient ID',
+                 lg_names = levels(as.factor(umap_smp$pt_ID)),   x_lim = x_lim, y_lim = y_lim)
+```
+
+```{r, echo=FALSE, fig.width = 10, fig.height = 5}
+ClusterUMAP_plot(umap_smp, color_by_cluster = F, color_by_protein = T, 
+                 ft_cols = ft_cols, plot_clusnames = F, x_lim = x_lim, y_lim = y_lim, 
+                 nrow_prot = 2, heights_prot = unit(c(2,2), c("in", "in")))
+```
+
+### Heatmap (median exp per cluster)
+```{r, echo=FALSE}
+df_cluster <- denoisingCTF::t_asinh(cbind(annot_df[k,ft_cols], 
+                                          'cluster'= annot_df[k,'clusters_B'], 
+                                          'n_op2'=annot_df[k,'n_op2']))
+```
+
+```{r, echo=FALSE, fig.width = 10, fig.height = 6}
+hm_median(df_cluster)
+```
+
+### Histograms (protein expression per cluster + distribution)
+```{r, echo=FALSE, fig.width = 9, fig.height = 9}
+hist_prot(df_cluster)
+```
+
+### Heatmap of proportions
+```{r, echo=FALSE, fig.width = 10, fig.height = 3}
+col_rm <- colnames(prcnt_clusters)[-c(1:8)]
+x <- rc_prcnt(prcnt_clusters, col_rm = col_rm)
+frac_hm(x, CDE, 'n_op2')
+```
+
+### Boxplots comparing cluster proportions (% of sample)
+```{r, echo=FALSE, fig.width = 10, fig.height = 6}
+frac_boxplot(x, CDE, 'n_op2')
+```
+
+
+## 2.2 Endothelial cells
+```{r, echo=FALSE}
+# load UMAP data
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/supervised/UMAP_endo.RData")
+# subset index
+st_nm <- 'Endothelial'
+k <- which(annot_df$subtype_B == st_nm)
+# ft cols
+ft_cols <- c(18, 19, 21, 22, 26, 28, 31, 33, 35, 38, 41, 42, 50, 51)
+```
+
+### UMAPs
+```{r}
+nop2 <- c("#EC7063", "#3498DB", "grey72")
+
+x_lim <- c(min(umap_smp$UMAP1)-1, max(umap_smp$UMAP1)+1)
+y_lim <- c(min(umap_smp$UMAP2)-1, max(umap_smp$UMAP2)+1)
+
+#x and y lim based on UMAP1 and UMAP2 max and min
+library(scales)
+set.seed(101)
+qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
+col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+clus_col = hue_pal()(length(unique(umap_smp$clusters_B)))
+
+ClusterUMAP_plot(umap_smp, density = T, color_by_cluster = F, color_by_protein = F, pallete = F,
+                 plot_clusnames = F, plot_title = 'Density', x_lim = x_lim, y_lim = y_lim)
+
+ClusterUMAP_plot(umap_smp, color_by_cluster = T, color_by_protein = F, pallete = F,
+                 cluster_col = 'clusters_B', plot_clusnames = F, plot_title = 'Cluster identity',
+                 plot_colors = clus_col, lg_names = levels(umap_smp$clusters_B),   x_lim = x_lim, y_lim = y_lim)
+ClusterUMAP_plot(umap_smp, color_by_cluster = T, color_by_protein = F, pallete = F,
+                 cluster_col = 'n_op2', plot_clusnames = F, plot_title = 'Behavior class',
+                 plot_colors = nop2, lg_names = levels(umap_smp$n_op2),   x_lim = x_lim, y_lim = y_lim)
+ClusterUMAP_plot(umap_smp, color_by_cluster = F, color_by_protein = F, color_by_continuous = T, pallete = F,
+                 cluster_col = 'SILA', plot_clusnames = F, plot_title = 'SILA score',
+                 plot_colors = nop2,   x_lim = x_lim, y_lim = y_lim)
+ClusterUMAP_plot(umap_smp, color_by_cluster = T, color_by_protein = F, pallete = F, plot_colors = col_vector,
+                 cluster_col = 'pt_ID', plot_clusnames = F, plot_title = 'Patient ID',
+                 lg_names = levels(as.factor(umap_smp$pt_ID)),   x_lim = x_lim, y_lim = y_lim)
+```
+
+```{r, echo=FALSE, fig.width = 10, fig.height = 5}
+ClusterUMAP_plot(umap_smp, color_by_cluster = F, color_by_protein = T, 
+                 ft_cols = ft_cols, plot_clusnames = F, x_lim = x_lim, y_lim = y_lim, 
+                 nrow_prot = 2, heights_prot = unit(c(2,2), c("in", "in")))
+```
+
+### Heatmap (median exp per cluster)
+```{r, echo=FALSE}
+df_cluster <- denoisingCTF::t_asinh(cbind(annot_df[k,ft_cols], 
+                                          'cluster'= annot_df[k,'clusters_B'], 
+                                          'n_op2'=annot_df[k,'n_op2']))
+```
+
+```{r, echo=FALSE, fig.width = 10, fig.height = 6}
+hm_median(df_cluster)
+```
+
+### Histograms (protein expression per cluster + distribution)
+```{r, echo=FALSE, fig.width = 9, fig.height = 9}
+hist_prot(df_cluster)
+```
+
+### Heatmap of proportions
+```{r, echo=FALSE, fig.width = 10, fig.height = 3}
+col_rm <- colnames(prcnt_clusters)[-c(14:16)]
+x <- rc_prcnt(prcnt_clusters, col_rm = col_rm)
+frac_hm(x, CDE, 'n_op2')
+```
+
+### Boxplots comparing cluster proportions (% of sample)
+```{r, echo=FALSE, fig.width = 10, fig.height = 6}
+frac_boxplot(x, CDE, 'n_op2')
+```
+
+
+## 2.3 Fibroblasts/Mesenchymal cells
+```{r, echo=FALSE}
+# load UMAP data
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/supervised/UMAP_fmes.RData")
+# subset index
+st_nm <- 'Fib_Mesenchymal'
+k <- which(annot_df$subtype_B == st_nm)
+# ft cols
+ft_cols <- c(18, 19, 21, 22, 26, 27, 28, 33, 35, 38, 41, 42, 43, 48, 50, 51)
+```
+
+### UMAPs
+```{r}
+nop2 <- c("#EC7063", "#3498DB", "grey72")
+
+x_lim <- c(min(umap_smp$UMAP1)-1, max(umap_smp$UMAP1)+1)
+y_lim <- c(min(umap_smp$UMAP2)-1, max(umap_smp$UMAP2)+1)
+
+#x and y lim based on UMAP1 and UMAP2 max and min
+library(scales)
+set.seed(101)
+qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
+col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+clus_col = hue_pal()(length(unique(umap_smp$clusters_B)))
+
+ClusterUMAP_plot(umap_smp, density = T, color_by_cluster = F, color_by_protein = F, pallete = F,
+                 plot_clusnames = F, plot_title = 'Density', x_lim = x_lim, y_lim = y_lim)
+
+ClusterUMAP_plot(umap_smp, color_by_cluster = T, color_by_protein = F, pallete = F,
+                 cluster_col = 'clusters_B', plot_clusnames = F, plot_title = 'Cluster identity',
+                 plot_colors = clus_col, lg_names = levels(umap_smp$clusters_B),   x_lim = x_lim, y_lim = y_lim)
+ClusterUMAP_plot(umap_smp, color_by_cluster = T, color_by_protein = F, pallete = F,
+                 cluster_col = 'n_op2', plot_clusnames = F, plot_title = 'Behavior class',
+                 plot_colors = nop2, lg_names = levels(umap_smp$n_op2),   x_lim = x_lim, y_lim = y_lim)
+ClusterUMAP_plot(umap_smp, color_by_cluster = F, color_by_protein = F, color_by_continuous = T, pallete = F,
+                 cluster_col = 'SILA', plot_clusnames = F, plot_title = 'SILA score',
+                 plot_colors = nop2,   x_lim = x_lim, y_lim = y_lim)
+ClusterUMAP_plot(umap_smp, color_by_cluster = T, color_by_protein = F, pallete = F, plot_colors = col_vector,
+                 cluster_col = 'pt_ID', plot_clusnames = F, plot_title = 'Patient ID',
+                 lg_names = levels(as.factor(umap_smp$pt_ID)),   x_lim = x_lim, y_lim = y_lim)
+```
+
+```{r, echo=FALSE, fig.width = 10, fig.height = 5}
+ClusterUMAP_plot(umap_smp, color_by_cluster = F, color_by_protein = T, 
+                 ft_cols = ft_cols, plot_clusnames = F, x_lim = x_lim, y_lim = y_lim, 
+                 nrow_prot = 2, heights_prot = unit(c(2,2), c("in", "in")))
+```
+
+### Heatmap (median exp per cluster)
+```{r, echo=FALSE}
+df_cluster <- denoisingCTF::t_asinh(cbind(annot_df[k,ft_cols], 
+                                          'cluster'= annot_df[k,'clusters_B'], 
+                                          'n_op2'=annot_df[k,'n_op2']))
+```
+
+```{r, echo=FALSE, fig.width = 10, fig.height = 6}
+hm_median(df_cluster)
+```
+
+### Histograms (protein expression per cluster + distribution)
+```{r, echo=FALSE, fig.width = 9, fig.height = 9}
+hist_prot(df_cluster)
+```
+
+### Heatmap of proportions
+```{r, echo=FALSE, fig.width = 10, fig.height = 3}
+col_rm <- colnames(prcnt_clusters)[-c(9:13)]
+x <- rc_prcnt(prcnt_clusters, col_rm = col_rm)
+frac_hm(x, CDE, 'n_op2')
+```
+
+### Boxplots comparing cluster proportions (% of sample)
+```{r, echo=FALSE, fig.width = 10, fig.height = 6}
+frac_boxplot(x, CDE, 'n_op2')
+```
+
+## 2.4 CD8+ T cells
+```{r, echo=FALSE}
+# load UMAP data
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/supervised/UMAP_cd8t.RData")
+# subset index
+st_nm <- 'Tc_cells'
+k <- which(annot_df$subtype_B == st_nm)
+# ft cols
+ft_cols <- c(18:22, 26, 28, 31, 35, 42, 50)
+```
+
+### UMAPs
+```{r}
+nop2 <- c("#EC7063", "#3498DB", "grey72")
+
+x_lim <- c(min(umap_smp$UMAP1)-1, max(umap_smp$UMAP1)+1)
+y_lim <- c(min(umap_smp$UMAP2)-1, max(umap_smp$UMAP2)+1)
+
+#x and y lim based on UMAP1 and UMAP2 max and min
+library(scales)
+set.seed(101)
+qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
+col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+clus_col = hue_pal()(length(unique(umap_smp$clusters_B)))
+
+ClusterUMAP_plot(umap_smp, density = T, color_by_cluster = F, color_by_protein = F, pallete = F,
+                 plot_clusnames = F, plot_title = 'Density', x_lim = x_lim, y_lim = y_lim)
+
+ClusterUMAP_plot(umap_smp, color_by_cluster = T, color_by_protein = F, pallete = F,
+                 cluster_col = 'clusters_B', plot_clusnames = F, plot_title = 'Cluster identity',
+                 plot_colors = clus_col, lg_names = levels(umap_smp$clusters_B),   x_lim = x_lim, y_lim = y_lim)
+ClusterUMAP_plot(umap_smp, color_by_cluster = T, color_by_protein = F, pallete = F,
+                 cluster_col = 'n_op2', plot_clusnames = F, plot_title = 'Behavior class',
+                 plot_colors = nop2, lg_names = levels(umap_smp$n_op2),   x_lim = x_lim, y_lim = y_lim)
+ClusterUMAP_plot(umap_smp, color_by_cluster = F, color_by_protein = F, color_by_continuous = T, pallete = F,
+                 cluster_col = 'SILA', plot_clusnames = F, plot_title = 'SILA score',
+                 plot_colors = nop2,   x_lim = x_lim, y_lim = y_lim)
+ClusterUMAP_plot(umap_smp, color_by_cluster = T, color_by_protein = F, pallete = F, plot_colors = col_vector,
+                 cluster_col = 'pt_ID', plot_clusnames = F, plot_title = 'Patient ID',
+                 lg_names = levels(as.factor(umap_smp$pt_ID)),   x_lim = x_lim, y_lim = y_lim)
+```
+
+```{r, echo=FALSE, fig.width = 10, fig.height = 5}
+ClusterUMAP_plot(umap_smp, color_by_cluster = F, color_by_protein = T, 
+                 ft_cols = ft_cols, plot_clusnames = F, x_lim = x_lim, y_lim = y_lim, 
+                 nrow_prot = 2, heights_prot = unit(c(2,2), c("in", "in")))
+```
+
+### Heatmap (median exp per cluster)
+```{r, echo=FALSE}
+df_cluster <- denoisingCTF::t_asinh(cbind(annot_df[k,ft_cols], 
+                                          'cluster'= annot_df[k,'clusters_B'], 
+                                          'n_op2'=annot_df[k,'n_op2']))
+```
+
+```{r, echo=FALSE, fig.width = 10, fig.height = 6}
+hm_median(df_cluster)
+```
+
+### Histograms (protein expression per cluster + distribution)
+```{r, echo=FALSE, fig.width = 9, fig.height = 9}
+hist_prot(df_cluster)
+```
+
+### Heatmap of proportions
+```{r, echo=FALSE, fig.width = 10, fig.height = 3}
+col_rm <- colnames(prcnt_clusters)[-c(21:23)]
+x <- rc_prcnt(prcnt_clusters, col_rm = col_rm)
+frac_hm(x, CDE, 'n_op2')
+```
+
+### Boxplots comparing cluster proportions (% of sample)
+```{r, echo=FALSE, fig.width = 10, fig.height = 6}
+frac_boxplot(x, CDE, 'n_op2')
+```
+
+
+## 2.5 CD4+ T cells
+```{r, echo=FALSE}
+# load UMAP data
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/supervised/UMAP_cd4t.RData")
+# subset index
+st_nm <- 'Th_cells'
+k <- which(annot_df$subtype_B == st_nm)
+# ft cols
+ft_cols <- c(18:22, 26, 28, 31, 35, 42, 50)
+```
+
+### UMAPs
+```{r}
+nop2 <- c("#EC7063", "#3498DB", "grey72")
+
+x_lim <- c(min(umap_smp$UMAP1)-1, max(umap_smp$UMAP1)+1)
+y_lim <- c(min(umap_smp$UMAP2)-1, max(umap_smp$UMAP2)+1)
+
+#x and y lim based on UMAP1 and UMAP2 max and min
+library(scales)
+set.seed(101)
+qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
+col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+clus_col = hue_pal()(length(unique(umap_smp$clusters_B)))
+
+ClusterUMAP_plot(umap_smp, density = T, color_by_cluster = F, color_by_protein = F, pallete = F,
+                 plot_clusnames = F, plot_title = 'Density', x_lim = x_lim, y_lim = y_lim)
+
+ClusterUMAP_plot(umap_smp, color_by_cluster = T, color_by_protein = F, pallete = F,
+                 cluster_col = 'clusters_B', plot_clusnames = F, plot_title = 'Cluster identity',
+                 plot_colors = clus_col, lg_names = levels(umap_smp$clusters_B),   x_lim = x_lim, y_lim = y_lim)
+ClusterUMAP_plot(umap_smp, color_by_cluster = T, color_by_protein = F, pallete = F,
+                 cluster_col = 'n_op2', plot_clusnames = F, plot_title = 'Behavior class',
+                 plot_colors = nop2, lg_names = levels(umap_smp$n_op2),   x_lim = x_lim, y_lim = y_lim)
+ClusterUMAP_plot(umap_smp, color_by_cluster = F, color_by_protein = F, color_by_continuous = T, pallete = F,
+                 cluster_col = 'SILA', plot_clusnames = F, plot_title = 'SILA score',
+                 plot_colors = nop2,   x_lim = x_lim, y_lim = y_lim)
+ClusterUMAP_plot(umap_smp, color_by_cluster = T, color_by_protein = F, pallete = F, plot_colors = col_vector,
+                 cluster_col = 'pt_ID', plot_clusnames = F, plot_title = 'Patient ID',
+                 lg_names = levels(as.factor(umap_smp$pt_ID)),   x_lim = x_lim, y_lim = y_lim)
+```
+
+```{r, echo=FALSE, fig.width = 10, fig.height = 5}
+ClusterUMAP_plot(umap_smp, color_by_cluster = F, color_by_protein = T, 
+                 ft_cols = ft_cols, plot_clusnames = F, x_lim = x_lim, y_lim = y_lim, 
+                 nrow_prot = 2, heights_prot = unit(c(2,2), c("in", "in")))
+```
+
+### Heatmap (median exp per cluster)
+```{r, echo=FALSE}
+df_cluster <- denoisingCTF::t_asinh(cbind(annot_df[k,ft_cols], 
+                                          'cluster'= annot_df[k,'clusters_B'], 
+                                          'n_op2'=annot_df[k,'n_op2']))
+```
+
+```{r, echo=FALSE, fig.width = 10, fig.height = 6}
+hm_median(df_cluster)
+```
+
+### Histograms (protein expression per cluster + distribution)
+```{r, echo=FALSE, fig.width = 9, fig.height = 9}
+hist_prot(df_cluster)
+```
+
+### Heatmap of proportions
+```{r, echo=FALSE, fig.width = 10, fig.height = 3}
+col_rm <- colnames(prcnt_clusters)[-c(17:20)]
+x <- rc_prcnt(prcnt_clusters, col_rm = col_rm)
+frac_hm(x, CDE, 'n_op2')
+```
+
+### Boxplots comparing cluster proportions (% of sample)
+```{r, echo=FALSE, fig.width = 10, fig.height = 6}
+frac_boxplot(x, CDE, 'n_op2')
+```
+
+
+## 2.6 DN T cells
+```{r, echo=FALSE}
+# load UMAP data
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/supervised/UMAP_dnt.RData")
+# subset index
+st_nm <- 'DNT_cells'
+k <- which(annot_df$subtype_B == st_nm)
+# ft cols
+ft_cols <- c(18:22, 26, 28, 31, 35, 42, 50)
+```
+
+### UMAPs
+```{r}
+nop2 <- c("#EC7063", "#3498DB", "grey72")
+
+x_lim <- c(min(umap_smp$UMAP1)-1, max(umap_smp$UMAP1)+1)
+y_lim <- c(min(umap_smp$UMAP2)-1, max(umap_smp$UMAP2)+1)
+
+#x and y lim based on UMAP1 and UMAP2 max and min
+library(scales)
+set.seed(101)
+qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
+col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+clus_col = hue_pal()(length(unique(umap_smp$clusters_B)))
+
+ClusterUMAP_plot(umap_smp, density = T, color_by_cluster = F, color_by_protein = F, pallete = F,
+                 plot_clusnames = F, plot_title = 'Density', x_lim = x_lim, y_lim = y_lim)
+
+ClusterUMAP_plot(umap_smp, color_by_cluster = T, color_by_protein = F, pallete = F,
+                 cluster_col = 'clusters_B', plot_clusnames = F, plot_title = 'Cluster identity',
+                 plot_colors = clus_col, lg_names = levels(umap_smp$clusters_B),   x_lim = x_lim, y_lim = y_lim)
+ClusterUMAP_plot(umap_smp, color_by_cluster = T, color_by_protein = F, pallete = F,
+                 cluster_col = 'n_op2', plot_clusnames = F, plot_title = 'Behavior class',
+                 plot_colors = nop2, lg_names = levels(umap_smp$n_op2),   x_lim = x_lim, y_lim = y_lim)
+ClusterUMAP_plot(umap_smp, color_by_cluster = F, color_by_protein = F, color_by_continuous = T, pallete = F,
+                 cluster_col = 'SILA', plot_clusnames = F, plot_title = 'SILA score',
+                 plot_colors = nop2,   x_lim = x_lim, y_lim = y_lim)
+ClusterUMAP_plot(umap_smp, color_by_cluster = T, color_by_protein = F, pallete = F, plot_colors = col_vector,
+                 cluster_col = 'pt_ID', plot_clusnames = F, plot_title = 'Patient ID',
+                 lg_names = levels(as.factor(umap_smp$pt_ID)),   x_lim = x_lim, y_lim = y_lim)
+```
+
+```{r, echo=FALSE, fig.width = 10, fig.height = 5}
+ClusterUMAP_plot(umap_smp, color_by_cluster = F, color_by_protein = T, 
+                 ft_cols = ft_cols, plot_clusnames = F, x_lim = x_lim, y_lim = y_lim, 
+                 nrow_prot = 2, heights_prot = unit(c(2,2), c("in", "in")))
+```
+
+### Heatmap (median exp per cluster)
+```{r, echo=FALSE}
+df_cluster <- denoisingCTF::t_asinh(cbind(annot_df[k,ft_cols], 
+                                          'cluster'= annot_df[k,'clusters_B'], 
+                                          'n_op2'=annot_df[k,'n_op2']))
+```
+
+```{r, echo=FALSE, fig.width = 10, fig.height = 6}
+hm_median(df_cluster)
+```
+
+### Histograms (protein expression per cluster + distribution)
+```{r, echo=FALSE, fig.width = 9, fig.height = 9}
+hist_prot(df_cluster)
+```
+
+### Heatmap of proportions
+```{r, echo=FALSE, fig.width = 10, fig.height = 3}
+col_rm <- colnames(prcnt_clusters)[-c(24:27)]
+x <- rc_prcnt(prcnt_clusters, col_rm = col_rm)
+frac_hm(x, CDE, 'n_op2')
+```
+
+### Boxplots comparing cluster proportions (% of sample)
+```{r, echo=FALSE, fig.width = 10, fig.height = 6}
+frac_boxplot(x, CDE, 'n_op2')
+```
+
+## 2.7 Myeloid cells
+```{r, echo=FALSE}
+# load UMAP data
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/supervised/UMAP_mye.RData")
+# subset index
+st_nm <- 'Myeloid'
+k <- which(annot_df$subtype_B == st_nm)
+# ft cols
+ft_cols <- c(18:22, 26, 28, 31, 35, 42, 50)
+```
+
+### UMAPs
+```{r}
+nop2 <- c("#EC7063", "#3498DB", "grey72")
+
+x_lim <- c(min(umap_smp$UMAP1)-1, max(umap_smp$UMAP1)+1)
+y_lim <- c(min(umap_smp$UMAP2)-1, max(umap_smp$UMAP2)+1)
+
+#x and y lim based on UMAP1 and UMAP2 max and min
+library(scales)
+set.seed(101)
+qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
+col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+clus_col = hue_pal()(length(unique(umap_smp$clusters_B)))
+
+ClusterUMAP_plot(umap_smp, density = T, color_by_cluster = F, color_by_protein = F, pallete = F,
+                 plot_clusnames = F, plot_title = 'Density', x_lim = x_lim, y_lim = y_lim)
+
+ClusterUMAP_plot(umap_smp, color_by_cluster = T, color_by_protein = F, pallete = F,
+                 cluster_col = 'clusters_B', plot_clusnames = F, plot_title = 'Cluster identity',
+                 plot_colors = clus_col, lg_names = levels(umap_smp$clusters_B),   x_lim = x_lim, y_lim = y_lim)
+ClusterUMAP_plot(umap_smp, color_by_cluster = T, color_by_protein = F, pallete = F,
+                 cluster_col = 'n_op2', plot_clusnames = F, plot_title = 'Behavior class',
+                 plot_colors = nop2, lg_names = levels(umap_smp$n_op2),   x_lim = x_lim, y_lim = y_lim)
+ClusterUMAP_plot(umap_smp, color_by_cluster = F, color_by_protein = F, color_by_continuous = T, pallete = F,
+                 cluster_col = 'SILA', plot_clusnames = F, plot_title = 'SILA score',
+                 plot_colors = nop2,   x_lim = x_lim, y_lim = y_lim)
+ClusterUMAP_plot(umap_smp, color_by_cluster = T, color_by_protein = F, pallete = F, plot_colors = col_vector,
+                 cluster_col = 'pt_ID', plot_clusnames = F, plot_title = 'Patient ID',
+                 lg_names = levels(as.factor(umap_smp$pt_ID)),   x_lim = x_lim, y_lim = y_lim)
+```
+
+```{r, echo=FALSE, fig.width = 10, fig.height = 5}
+ClusterUMAP_plot(umap_smp, color_by_cluster = F, color_by_protein = T, 
+                 ft_cols = ft_cols, plot_clusnames = F, x_lim = x_lim, y_lim = y_lim, 
+                 nrow_prot = 2, heights_prot = unit(c(2,2), c("in", "in")))
+```
+
+### Heatmap (median exp per cluster)
+```{r, echo=FALSE}
+df_cluster <- denoisingCTF::t_asinh(cbind(annot_df[k,ft_cols], 
+                                          'cluster'= annot_df[k,'clusters_B'], 
+                                          'n_op2'=annot_df[k,'n_op2']))
+```
+
+```{r, echo=FALSE, fig.width = 10, fig.height = 6}
+hm_median(df_cluster)
+```
+
+### Histograms (protein expression per cluster + distribution)
+```{r, echo=FALSE, fig.width = 9, fig.height = 9}
+hist_prot(df_cluster)
+```
+
+### Heatmap of proportions
+```{r, echo=FALSE, fig.width = 10, fig.height = 3}
+col_rm <- colnames(prcnt_clusters)[-c(28:30)]
+x <- rc_prcnt(prcnt_clusters, col_rm = col_rm)
+frac_hm(x, CDE, 'n_op2')
+```
+
+### Boxplots comparing cluster proportions (% of sample)
+```{r, echo=FALSE, fig.width = 10, fig.height = 6}
+frac_boxplot(x, CDE, 'n_op2')
+```
+
+
+## 2.8 NK cells
+```{r, echo=FALSE}
+# load UMAP data
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/supervised/UMAP_nk.RData")
+# subset index
+st_nm <- 'NK_cells'
+k <- which(annot_df$subtype_B == st_nm)
+# ft cols
+ft_cols <- c(18:22, 26, 28, 31, 35, 42, 50)
+```
+
+### UMAPs
+```{r}
+nop2 <- c("#EC7063", "#3498DB", "grey72")
+
+x_lim <- c(min(umap_smp$UMAP1)-1, max(umap_smp$UMAP1)+1)
+y_lim <- c(min(umap_smp$UMAP2)-1, max(umap_smp$UMAP2)+1)
+
+#x and y lim based on UMAP1 and UMAP2 max and min
+library(scales)
+set.seed(101)
+qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
+col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+clus_col = hue_pal()(length(unique(umap_smp$clusters_B)))
+
+ClusterUMAP_plot(umap_smp, density = T, color_by_cluster = F, color_by_protein = F, pallete = F,
+                 plot_clusnames = F, plot_title = 'Density', x_lim = x_lim, y_lim = y_lim)
+
+ClusterUMAP_plot(umap_smp, color_by_cluster = T, color_by_protein = F, pallete = F,
+                 cluster_col = 'clusters_B', plot_clusnames = F, plot_title = 'Cluster identity',
+                 plot_colors = clus_col, lg_names = levels(umap_smp$clusters_B),   x_lim = x_lim, y_lim = y_lim)
+ClusterUMAP_plot(umap_smp, color_by_cluster = T, color_by_protein = F, pallete = F,
+                 cluster_col = 'n_op2', plot_clusnames = F, plot_title = 'Behavior class',
+                 plot_colors = nop2, lg_names = levels(umap_smp$n_op2),   x_lim = x_lim, y_lim = y_lim)
+ClusterUMAP_plot(umap_smp, color_by_cluster = F, color_by_protein = F, color_by_continuous = T, pallete = F,
+                 cluster_col = 'SILA', plot_clusnames = F, plot_title = 'SILA score',
+                 plot_colors = nop2,   x_lim = x_lim, y_lim = y_lim)
+ClusterUMAP_plot(umap_smp, color_by_cluster = T, color_by_protein = F, pallete = F, plot_colors = col_vector,
+                 cluster_col = 'pt_ID', plot_clusnames = F, plot_title = 'Patient ID',
+                 lg_names = levels(as.factor(umap_smp$pt_ID)),   x_lim = x_lim, y_lim = y_lim)
+```
+
+```{r, echo=FALSE, fig.width = 10, fig.height = 5}
+ClusterUMAP_plot(umap_smp, color_by_cluster = F, color_by_protein = T, 
+                 ft_cols = ft_cols, plot_clusnames = F, x_lim = x_lim, y_lim = y_lim, 
+                 nrow_prot = 2, heights_prot = unit(c(2,2), c("in", "in")))
+```
+
+### Heatmap (median exp per cluster)
+```{r, echo=FALSE}
+df_cluster <- denoisingCTF::t_asinh(cbind(annot_df[k,ft_cols], 
+                                          'cluster'= annot_df[k,'clusters_B'], 
+                                          'n_op2'=annot_df[k,'n_op2']))
+```
+
+```{r, echo=FALSE, fig.width = 10, fig.height = 6}
+hm_median(df_cluster)
+```
+
+### Histograms (protein expression per cluster + distribution)
+```{r, echo=FALSE, fig.width = 9, fig.height = 9}
+hist_prot(df_cluster)
+```
+
+### Heatmap of proportions
+```{r, echo=FALSE, fig.width = 10, fig.height = 3}
+col_rm <- colnames(prcnt_clusters)[-c(31:34)]
+x <- rc_prcnt(prcnt_clusters, col_rm = col_rm)
+frac_hm(x, CDE, 'n_op2')
+```
+
+### Boxplots comparing cluster proportions (% of sample)
+```{r, echo=FALSE, fig.width = 10, fig.height = 6}
+frac_boxplot(x, CDE, 'n_op2')
+```
+
+
+
+# 3. Other visualizations
+
+## 3.1 Protein-protein correlation (co-expression)
+### Bulk
+```{r, echo=FALSE, fig.width = 15, fig.height = 10}
+protein_corr(co_bulk)
+```
+### Epithelial cancer cells
+```{r, echo=FALSE, fig.width = 15, fig.height = 10}
+protein_corr(co_epi)
+```
+
+### Endothelial cells
+```{r, echo=FALSE, fig.width = 15, fig.height = 10}
+protein_corr(co_endo)
+```
+
+### Fibroblasts/Mesenchymal cells
+```{r, echo=FALSE, fig.width = 15, fig.height = 10}
+protein_corr(co_fmes)
+```
+
+### CD4 T cells
+```{r, echo=FALSE, fig.width = 15, fig.height = 10}
+protein_corr(co_th)
+```
+
+### CD8 T cells
+```{r, echo=FALSE, fig.width = 15, fig.height = 10}
+protein_corr(co_tc)
+```
+
+### DN T cells
+```{r, echo=FALSE, fig.width = 15, fig.height = 10}
+protein_corr(co_dnt)
+```
+
+### Myeloid cells
+```{r, echo=FALSE, fig.width = 15, fig.height = 10}
+protein_corr(co_mye)
+```
+
+### NK cells
+```{r, echo=FALSE, fig.width = 15, fig.height = 10}
+protein_corr(co_nk)
+```
+
+### Other immune cells
+```{r, echo=FALSE, fig.width = 15, fig.height = 10}
+protein_corr(co_oimm)
+```
+
+## 3.2 Cell type proportions correlations
+### Major cell types
+```{r, echo=FALSE}
+corr_plot(prcnt_celltypes)
+```
+### Cell subtypes
+```{r, echo=FALSE}
+corr_plot(prcnt_subtypes)
+```
+### Cell subtypes clusters
+```{r, echo=FALSE, fig.width = 15, fig.height = 10}
+corr_plot(prcnt_clusters)
+```
+

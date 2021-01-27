@@ -339,6 +339,7 @@ main_bp <- function(data, cond_col, celltype_col, cluster_col, celltype_nm, ptID
 }
 
 frac_hm <- function(prcnt_dt, CDE, class_col){
+    prcnt_dt[is.na(prcnt_dt)] <- 0
     lb <- rep('Indolent', nrow(prcnt_dt))
     lb[which(CDE[,class_col] == 'agg')] <- 'Aggressive'
     levels = c('Indolent', 'Aggressive')
@@ -365,6 +366,7 @@ frac_hm <- function(prcnt_dt, CDE, class_col){
 
 
 frac_boxplot <- function(prcnt_dt, CDE, class_col){
+    prcnt_dt[is.na(prcnt_dt)] <- 0
     lb <- rep('Indolent', nrow(prcnt_dt))
     lb[which(CDE[,class_col] == 'agg')] <- 'Aggressive'
     levels = c('Indolent', 'Aggressive')
@@ -398,7 +400,7 @@ frac_boxplot <- function(prcnt_dt, CDE, class_col){
 hm_median <- function(data){
     source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/20_ClustAnnot_functions.R")
     data$cluster <- as.numeric(gsub(".*_",  "",data$cluster))
-    data <- ClusterEval_data(data[,1:(ncol(data)-2)], eval_type = 'heatmap')
+    data <- ClusterEval_data(data[,1:(ncol(data)-1)], eval_type = 'heatmap')
     colnames(data) <- gsub(".*_",  "",colnames(data))
 
     library(gplots)
@@ -439,8 +441,8 @@ hm_median <- function(data){
 }
 
 protein_corr <- function(corr_ls) {
-    par(cex=0.9) # size
-    par(lwd = 1.2) # line width
+    #par(cex=0.9) # size
+    #par(lwd = 1.2) # line width
     r <- corr_ls$r
     pv <- corr_ls$P
     colnames(r) <- gsub(".*_",  "",colnames(r))
@@ -452,7 +454,7 @@ protein_corr <- function(corr_ls) {
 }
 
 hist_prot <- function(data){
-    data <- data[,1:(ncol(data)-2)]
+    data <- data[,1:(ncol(data)-1)]
     colnames(data) <- gsub(".*_",  "",colnames(data))
     data <- reshape2::melt(data,  id.vars = c('cluster'))
     data$cluster <- as.factor(data$cluster)

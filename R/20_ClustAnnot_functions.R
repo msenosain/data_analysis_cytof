@@ -322,12 +322,14 @@ corr_plot <- function(data, rcorr_type = 'spearman', p.adjust_method = 'BH'){
     colnames(corrected_pvals)<- colnames(res$P)
     rownames(corrected_pvals)<- rownames(res$P)
 
+    col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
+
     par(font = 2) # bold axis labels
     par(cex=0.9) # size
     par(lwd = 1.2) # line width
-    corrplot::corrplot(res$r, type="upper", order='original', tl.col = "black", 
+    corrplot::corrplot(res$r, type="upper", order='hclust', tl.col = "black", 
         tl.srt = 45, p.mat = corrected_pvals , sig.level = 0.05, 
-        insig = "blank", method = 'color', addCoef.col="black", 
+        insig = "blank", method = 'color', addCoef.col="black", col=col(200),
         number.font = 1, number.cex = 0.8, addgrid.col = 'grey', tl.cex = 1)    
 }
 

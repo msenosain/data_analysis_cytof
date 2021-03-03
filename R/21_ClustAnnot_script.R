@@ -25,24 +25,23 @@ ClusterEval_plot(umap_data, data_type = 'UMAP')
 table(dt_cl$cluster)/nrow(dt_cl)*100
 
 # Cluster annotation
-epithelial <- c(6,7,9,10)
+epithelial <- c(6,7,9)
 endothelial <- c(8)
 mesenchymal <- c(4)
-immune <- c(1,2,3)
+immune <- c(1,2,3,10) # for manuscript 1 cluster 10 is epithelial
 nothing <- c(5)
 #unknown <- c(6)
 
 ct_ls <- list('Epithelial'= epithelial, 'Endothelial'=endothelial, 
                    'Mesenchymal'=mesenchymal, 'Immune'=immune, 'Nothing'=nothing)
 
-annot_df <- ClusterAnnotation(data = big_df, df_cluster = dt_cl, 
+annot_df_wo <- ClusterAnnotation(data = big_df, df_cluster = dt_cl, 
     ls_annotation = ct_ls, annotation_col = 'cell_type', cl_delete = T, 
-    cl_delete_name = 'nothing')
+    cl_delete_name = 'Nothing')
 
-prcnt_by_pt <- ClassAbundanceByPt(data=annot_df, ptID_col = 'pt_ID', 
-    class_col = 'cell_type')
+ref_wo <- ref
 
-save(hm_data, tsne_data, umap_data, annot_df, prcnt_by_pt, file = 'majorcelltypes.RData')
+save(hm_data, tsne_data, umap_data, annot_df_wo, ref_wo, file = '/Users/senosam/Documents/Massion_lab/CyTOF_summary/woCD90/majorcelltypes.RData')
 
 
 # Do this for both, wCD90 woCD90 separately and then merge.
@@ -76,11 +75,11 @@ ClusterEval_plot(umap_data, data_type = 'UMAP')
 table(dt_cl$cluster)/nrow(dt_cl)*100
 
 # Cluster annotation
-epithelial <- c(1,2,4)
+epithelial <- c(1,2)
 endothelial <- c(7)
 fibroblasts <- c(9)
 mesenchymal <- c(11)
-immune <- c(3,5,6,8,12)
+immune <- c(3,4,5,6,8,12)
 nothing <- c(10)
 
 ct_ls <- list('Epithelial'= epithelial, 'Endothelial'=endothelial, 
@@ -91,10 +90,7 @@ annot_df <- ClusterAnnotation(data = big_df, df_cluster = dt_cl,
     ls_annotation = ct_ls, annotation_col = 'cell_type', cl_delete = T, 
     cl_delete_name = 'Nothing')
 
-prcnt_by_pt <- ClassAbundanceByPt(data=annot_df, ptID_col = 'pt_ID', 
-    class_col = 'cell_type')
-
-save(hm_data, tsne_data, umap_data, annot_df, prcnt_by_pt, file = 'majorcelltypes.RData')
+save(hm_data, tsne_data, umap_data, annot_df, ref, file = '/Users/senosam/Documents/Massion_lab/CyTOF_summary/withCD90/majorcelltypes.RData')
 
 
 #########################################################

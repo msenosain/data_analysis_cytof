@@ -126,9 +126,14 @@ save(annot_df, ref, file = file.path(dir, 'majorcelltypes_merged.RData'))
 
 # Immune cells
 ##########################################
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/20_ClustAnnot_functions.R")
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/majorcelltypes_merged.RData")
 
 # Clustering for Immune cells
 ct_immune <- subset(annot_df, cell_type_A == 'Immune')
+
+DetermineNumberOfClusters(ct_immune, k_max=15, plot=T,smooth=0.2,
+                                      iter.max=200, seed = 45)
 
 imm_cl <- clustering(ct_immune, n_clusters = 8, iterations = 200, seed = 55)
 # 30 34 44 46 47
@@ -138,29 +143,25 @@ hm_data <- ClusterEval_data(imm_cl, eval_type = 'heatmap')
 ClusterEval_plot(hm_data, data_type = 'heatmap')
 table(imm_cl$cluster)/nrow(imm_cl)*100
 
-tsne_data <- ClusterEval_data(imm_cl, eval_type = 'tSNE', sample_size = 25000)
-ClusterEval_plot(tsne_data, data_type = 'tSNE')
-
 umap_data <- ClusterEval_data(imm_cl, eval_type = 'UMAP', sample_size = 25000)
 ClusterEval_plot(umap_data, data_type = 'UMAP')
 
 # Cluster annotation
-myeloid <- c(3,4)
-th_cells <- c(5)
-tc_cells <- c(6)
-dnt_cells <- c(2,8)
-nk_cells <- c(1)
-other_immune <- c(7)
+myeloid <- c(1,3,4,8) # 1 3 4 8
+th_cells <- c(6) # 6 
+tc_cells <- c(2) # 2
+dnt_cells <- c(5) # 5
+other_immune <- c(7) # 7
 
 im_ls <- list('Myeloid'= myeloid, 'Th_cells'=th_cells, 'Tc_cells'=tc_cells, 
-    'DNT_cells'= dnt_cells, 'NK_cells'=nk_cells, 'Other_immune'=other_immune)
+    'DNT_cells'= dnt_cells, 'Other_immune'=other_immune)
 
 annot_imm <- ClusterAnnotation(data = ct_immune, df_cluster = imm_cl, 
     ls_annotation = im_ls, annotation_col = 'subtype')
 
 dir <- '/Users/senosam/Documents/Massion_lab/CyTOF_summary/both'
 
-save(hm_data, tsne_data, umap_data, annot_imm, file = file.path(dir,'immunesubtypes.RData'))
+save(hm_data, umap_data, annot_imm, file = file.path(dir,'immunesubtypes.RData'))
 
 
 

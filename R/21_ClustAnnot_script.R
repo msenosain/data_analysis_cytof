@@ -213,11 +213,8 @@ ct_epi <- subset(annot_df, cell_type_A == 'Epithelial')
 DetermineNumberOfClusters(ct_epi, k_max=15, plot=T,smooth=0.2,
                                       iter.max=200, seed = 45)
 
-#epi_cl <- clustering(ct_epi, n_clusters = 10, iterations = 200, seed = 50)
-# 15 18 19 21 22 23 24 25 26 27 28 29 31 33 35 37 38 40 41 42 43 45 48 50 51 (previous)
-
-epi_cl <- clustering(ct_epi, n_clusters = 8, iterations = 200, seed = 42)
-# 15 18 19 21 22 23 26 28 29 31 33 35 37 38 40 41 50 51 
+epi_cl <- clustering(ct_epi, n_clusters = 6, iterations = 200, seed = 42)
+# 15 18 19 21 22 23 26 28 31 33 35 37 38 40 41 50 51
 
 # Clustering Evaluation
 hm_data <- ClusterEval_data(epi_cl, eval_type = 'heatmap')
@@ -230,10 +227,10 @@ ClusterEval_plot(umap_data, data_type = 'UMAP')
 
 # Cluster annotation
 epi_ls <- list()
-for(i in 1:8){
+for(i in 1:6){
     epi_ls[i] <- c(i)
 }
-names(epi_ls) <- paste0('ECC_',rep(1:8))
+names(epi_ls) <- paste0('ECC_',rep(1:6))
 
 annot_epi <- ClusterAnnotation(data = ct_epi, df_cluster = epi_cl, 
     ls_annotation = epi_ls, annotation_col = 'clusters_A')
@@ -254,7 +251,7 @@ ct_cd4 <- subset(annot_df, subtype_A == 'Th_cells')
 DetermineNumberOfClusters(ct_cd4, k_max=10, plot=T,smooth=0.2,
                                       iter.max=200, seed = 45)
 
-cd4_cl <- clustering(ct_cd4, n_clusters = 4, iterations = 200, seed = 50)
+cd4_cl <- clustering(ct_cd4, n_clusters = 3, iterations = 200, seed = 50)
 # 18 19 20 21 22 26 28 31 35 42 50
 
 # Clustering Evaluation
@@ -268,10 +265,10 @@ ClusterEval_plot(umap_data, data_type = 'UMAP')
 
 # Cluster annotation
 cd4_ls <- list()
-for(i in 1:4){
+for(i in 1:3){
     cd4_ls[i] <- c(i)
 }
-names(cd4_ls) <- paste0('Th_',rep(1:4))
+names(cd4_ls) <- paste0('Th_',rep(1:3))
 
 annot_cd4 <- ClusterAnnotation(data = ct_cd4, df_cluster = cd4_cl, 
     ls_annotation = cd4_ls, annotation_col = 'clusters_A')
@@ -322,7 +319,7 @@ ct_dnt <- subset(annot_df, subtype_A == 'DNT_cells')
 DetermineNumberOfClusters(ct_dnt, k_max=10, plot=T,smooth=0.2,
                                       iter.max=200, seed = 45)
 
-dnt_cl <- clustering(ct_dnt, n_clusters = 4, iterations = 200, seed = 50)
+dnt_cl <- clustering(ct_dnt, n_clusters = 3, iterations = 200, seed = 50)
 # 18 19 20 21 22 26 28 31 35 42 50
 
 # Clustering Evaluation
@@ -336,10 +333,10 @@ ClusterEval_plot(umap_data, data_type = 'UMAP')
 
 # Cluster annotation
 dnt_ls <- list()
-for(i in 1:4){
+for(i in 1:3){
     dnt_ls[i] <- c(i)
 }
-names(dnt_ls) <- paste0('DNT_',rep(1:4))
+names(dnt_ls) <- paste0('DNT_',rep(1:3))
 
 annot_dnt <- ClusterAnnotation(data = ct_dnt, df_cluster = dnt_cl, 
     ls_annotation = dnt_ls, annotation_col = 'clusters_A')
@@ -380,39 +377,6 @@ annot_mye['clusters_B'] <- annot_mye$clusters_A
 
 dir <- '/Users/senosam/Documents/Massion_lab/CyTOF_summary/both'
 save(hm_data, umap_data, annot_mye, file = file.path(dir,'myeclusters.RData'))
-
-# Clustering NK cells
-##########################################
-ct_NK <- subset(annot_df, subtype_A == 'NK_cells')
-
-DetermineNumberOfClusters(ct_NK, k_max=10, plot=T,smooth=0.2,
-                                      iter.max=200, seed = 45)
-
-NK_cl <- clustering(ct_NK, n_clusters = 4, iterations = 200, seed = 50)
-# 18 19 20 21 22 26 28 31 35 42 50
-
-# Clustering Evaluation
-hm_data <- ClusterEval_data(NK_cl, eval_type = 'heatmap')
-ClusterEval_plot(hm_data, data_type = 'heatmap')
-
-table(NK_cl$cluster)/nrow(NK_cl)*100
-
-umap_data <- ClusterEval_data(NK_cl, eval_type = 'UMAP', sample_size = 10000)
-ClusterEval_plot(umap_data, data_type = 'UMAP')
-
-# Cluster annotation
-NK_ls <- list()
-for(i in 1:4){
-    NK_ls[i] <- c(i)
-}
-names(NK_ls) <- paste0('NK_',rep(1:4))
-
-annot_NK <- ClusterAnnotation(data = ct_NK, df_cluster = NK_cl, 
-    ls_annotation = NK_ls, annotation_col = 'clusters_A')
-annot_NK['clusters_B'] <- annot_NK$clusters_A
-
-dir <- '/Users/senosam/Documents/Massion_lab/CyTOF_summary/both'
-save(hm_data, umap_data, annot_NK, file = file.path(dir,'NKclusters.RData'))
 
 # Clustering Fib_Mesenchymal cells
 ##########################################
@@ -559,7 +523,6 @@ load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/majorcelltypes_mer
 remove(annot_df)
 load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/endoclusters.RData")
 load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/fmesclusters.RData")
-load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/NKclusters.RData")
 load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/myeclusters.RData")
 load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/dntclusters.RData")
 load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/cd8clusters.RData")
@@ -567,7 +530,7 @@ load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/cd4clusters.RData"
 load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/epiclusters.RData")
 load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/otherimm.RData")
 
-annot_df <- rbind(annot_epi, annot_fmes, annot_endo, annot_cd4, annot_cd8, annot_dnt, annot_mye, annot_NK, annot_otherimm)
+annot_df <- rbind(annot_epi, annot_fmes, annot_endo, annot_cd4, annot_cd8, annot_dnt, annot_mye, annot_otherimm)
 
 dir <- '/Users/senosam/Documents/Massion_lab/CyTOF_summary/both'
 save(annot_df, ref, file = file.path(dir,'cellclusters.RData'))

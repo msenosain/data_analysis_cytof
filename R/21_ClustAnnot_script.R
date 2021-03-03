@@ -614,16 +614,13 @@ co_dnt <- corr_f(annot_df[k,idx])
 k <- which(annot_df$subtype_A == 'Myeloid')
 co_mye <- corr_f(annot_df[k,idx])
 
-## NK
-k <- which(annot_df$subtype_A == 'NK_cells')
-co_nk <- corr_f(annot_df[k,idx])
 
 ## Other immune
 k <- which(annot_df$subtype_A == 'Other_immune')
 co_oimm <- corr_f(annot_df[k,idx])
 
 dir <- '/Users/senosam/Documents/Massion_lab/CyTOF_summary/both'
-save(co_bulk, co_epi, co_endo, co_fmes, co_th, co_tc, co_dnt, co_mye, co_nk, co_oimm, file = file.path(dir,'protein_correlations.RData'))
+save(co_bulk, co_epi, co_endo, co_fmes, co_th, co_tc, co_dnt, co_mye, co_oimm, file = file.path(dir,'protein_correlations.RData'))
 
 ###############################################################################
 # ***Only for first 11 tumors***

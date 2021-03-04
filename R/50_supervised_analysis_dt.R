@@ -1,6 +1,6 @@
 
 # Load functions
-source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/50_supervised_analysis_viz.R")
+source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/51_supervised_analysis_viz.R")
 # Load data
 load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/cellclusters.RData")
 ref <- ref[-42,] # sample 13376 has been collected twice and will be merged, only one ref is needed
@@ -101,7 +101,7 @@ save(umap_smp, file = "/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/a
 ###############################################################################
 # Epi UMAP
 ###############################################################################
-ft_cols <- c(15,18,19,21,22,23,26,28,29,31,33,35,37,38,40,41,50,51)
+ft_cols <- c(15,18,19,21,22,23,26,28,31,33,35,37,38,40,41,50,51)
 umap_smp <- umap_f(annot_df, sample_k = 25000, sample_by_patient = FALSE,
     col_id = ft_cols, subset = TRUE, subset_col='subtype_B', 
     subset_nm='Epithelial', seed = 50)
@@ -160,12 +160,3 @@ umap_smp <- umap_f(annot_df, sample_k = 25000, sample_by_patient = FALSE,
     col_id = ft_cols, subset = TRUE, 
     subset_col='subtype_B', subset_nm='Myeloid', seed = 50)
 save(umap_smp, file = "/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/supervised/UMAP_mye.RData")
-
-###############################################################################
-# NK UMAP
-###############################################################################
-ft_cols <- c(18:22, 26, 28, 31, 35, 42, 50)
-umap_smp <- umap_f(annot_df, sample_k = 25000, sample_by_patient = FALSE,
-    col_id = ft_cols, subset = TRUE, 
-    subset_col='subtype_B', subset_nm='NK_cells', seed = 50)
-save(umap_smp, file = "/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/supervised/UMAP_nk.RData")

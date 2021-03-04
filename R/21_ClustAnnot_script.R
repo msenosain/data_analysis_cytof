@@ -147,11 +147,11 @@ umap_data <- ClusterEval_data(imm_cl, eval_type = 'UMAP', sample_size = 25000)
 ClusterEval_plot(umap_data, data_type = 'UMAP')
 
 # Cluster annotation
-myeloid <- c(1,3,4,8) # 1 3 4 8
-th_cells <- c(6) # 6 
+myeloid <- c(3,7) # 3 7
+th_cells <- c(6) # 6
 tc_cells <- c(2) # 2
-dnt_cells <- c(5) # 5
-other_immune <- c(7) # 7
+dnt_cells <- c(4,5) # 4 5
+other_immune <- c(1,8) # 1 8
 
 im_ls <- list('Myeloid'= myeloid, 'Th_cells'=th_cells, 'Tc_cells'=tc_cells, 
     'DNT_cells'= dnt_cells, 'Other_immune'=other_immune)
@@ -378,6 +378,39 @@ annot_mye['clusters_B'] <- annot_mye$clusters_A
 dir <- '/Users/senosam/Documents/Massion_lab/CyTOF_summary/both'
 save(hm_data, umap_data, annot_mye, file = file.path(dir,'myeclusters.RData'))
 
+# Clustering Other Immune cells
+##########################################
+ct_oi <- subset(annot_df, subtype_A == 'Other_immune')
+
+DetermineNumberOfClusters(ct_oi, k_max=10, plot=T,smooth=0.2,
+                                      iter.max=200, seed = 45)
+
+oi_cl <- clustering(ct_oi, n_clusters = 4, iterations = 200, seed = 50)
+# 18 19 20 21 22 26 28 31 35 42 50
+
+# Clustering Evaluation
+hm_data <- ClusterEval_data(oi_cl, eval_type = 'heatmap')
+ClusterEval_plot(hm_data, data_type = 'heatmap')
+
+table(oi_cl$cluster)/nrow(oi_cl)*100
+
+umap_data <- ClusterEval_data(oi_cl, eval_type = 'UMAP', sample_size = 10000)
+ClusterEval_plot(umap_data, data_type = 'UMAP')
+
+# Cluster annotation
+oi_ls <- list()
+for(i in 1:4){
+    oi_ls[i] <- c(i)
+}
+names(oi_ls) <- paste0('OtherI_',rep(1:4))
+
+annot_oi <- ClusterAnnotation(data = ct_oi, df_cluster = oi_cl, 
+    ls_annotation = oi_ls, annotation_col = 'clusters_A')
+annot_oi['clusters_B'] <- annot_oi$clusters_A
+
+dir <- '/Users/senosam/Documents/Massion_lab/CyTOF_summary/both'
+save(hm_data, umap_data, annot_oi, file = file.path(dir,'otherimmclusters.RData'))
+
 # Clustering Fib_Mesenchymal cells
 ##########################################
 source("/Users/senosam/Documents/Repositories/Research/data_analysis_cytof/R/20_ClustAnnot_functions.R")
@@ -508,16 +541,6 @@ dir <- '/Users/senosam/Documents/Massion_lab/CyTOF_summary/both'
 save(hm_data, umap_data, annot_endo, file = file.path(dir,'endoclusters.RData'))
 
 ###############################################################################
-# Add cluster columns to "Other_immune"
-annot_otherimm <- subset(annot_df, subtype_A == 'Other_immune')
-
-annot_otherimm['clusters_A'] <- annot_otherimm$subtype_A
-annot_otherimm['clusters_B'] <- annot_otherimm$subtype_A
-
-dir <- '/Users/senosam/Documents/Massion_lab/CyTOF_summary/both'
-save(annot_otherimm, file = file.path(dir,'otherimm.RData'))
-
-###############################################################################
 # RBIND ALL CLUSTERS
 load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/majorcelltypes_merged.RData")
 remove(annot_df)
@@ -528,9 +551,9 @@ load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/dntclusters.RData"
 load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/cd8clusters.RData")
 load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/cd4clusters.RData")
 load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/epiclusters.RData")
-load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/otherimm.RData")
+load("/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/otherimmclusters.RData")
 
-annot_df <- rbind(annot_epi, annot_fmes, annot_endo, annot_cd4, annot_cd8, annot_dnt, annot_mye, annot_otherimm)
+annot_df <- rbind(annot_epi, annot_fmes, annot_endo, annot_cd4, annot_cd8, annot_dnt, annot_mye, annot_oi)
 
 dir <- '/Users/senosam/Documents/Massion_lab/CyTOF_summary/both'
 save(annot_df, ref, file = file.path(dir,'cellclusters.RData'))
@@ -613,7 +636,6 @@ co_dnt <- corr_f(annot_df[k,idx])
 ## Myeloid
 k <- which(annot_df$subtype_A == 'Myeloid')
 co_mye <- corr_f(annot_df[k,idx])
-
 
 ## Other immune
 k <- which(annot_df$subtype_A == 'Other_immune')

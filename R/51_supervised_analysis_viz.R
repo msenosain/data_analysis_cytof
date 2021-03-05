@@ -253,11 +253,10 @@ ClassDistribution <- function(data, cond_col, celltype_col, cluster_col, celltyp
 
 
 
-bp_stclusters <- function(dt, celltype_nm_plot, plot_type, plotly_p = TRUE){
+bp_stclusters <- function(dt, celltype_nm_plot, plot_type){
     library(reshape2)
     library(ggplot2)
     library(RColorBrewer)
-    library(plotly)
     if(!(plot_type %in% c('cond_frac', 'pt_frac', 'cell_num'))){
         stop('error')
     }
@@ -314,15 +313,11 @@ bp_stclusters <- function(dt, celltype_nm_plot, plot_type, plotly_p = TRUE){
                 xlab(celltype_nm_plot) + 
                 ylab("Number of cells")
     }
-
-    if(plotly_p){
-        p <- ggplotly(p)
-    }
     return(p)
 
 }
 
-main_bp <- function(data, cond_col, celltype_col, cluster_col, celltype_nm, ptID_col, celltype_nm_plot, plotly_p = T){
+main_bp <- function(data, cond_col, celltype_col, cluster_col, celltype_nm, ptID_col, celltype_nm_plot){
 
     dt_ls <- ClassDistribution(
         data = data, 
@@ -331,14 +326,17 @@ main_bp <- function(data, cond_col, celltype_col, cluster_col, celltype_nm, ptID
         cluster_col = cluster_col, 
         celltype_nm = celltype_nm, 
         ptID_col = ptID_col)
-    #print(dt_ls)
-    print(bp_stclusters(dt=dt_ls$prcnt_cond, celltype_nm_plot=celltype_nm_plot, plot_type='cond_frac', plotly_p = plotly_p))
-    print(bp_stclusters(dt=dt_ls$prcnt_pt, celltype_nm_plot=celltype_nm_plot, plot_type='pt_frac', plotly_p = plotly_p))
-    print(bp_stclusters(dt=dt_ls$num_clus, celltype_nm_plot=celltype_nm_plot, plot_type='cell_num', plotly_p = plotly_p))
+    
+    cond <- bp_stclusters(dt=dt_ls$prcnt_cond, celltype_nm_plot=celltype_nm_plot, plot_type='cond_frac')
+    frac <- bp_stclusters(dt=dt_ls$prcnt_pt, celltype_nm_plot=celltype_nm_plot, plot_type='pt_frac')
+    cnum <- bp_stclusters(dt=dt_ls$num_clus, celltype_nm_plot=celltype_nm_plot, plot_type='cell_num')
 
+    bp_ls <- list(cond=cond, frac=frac, cnum=cnum)
+    
+    return(bp_ls)
 }
 
-frac_hm <- function(prcnt_dt, CDE, class_col){
+frac_hm <- function(prcnt_dt, CDE, class_col, scale_v = TRUE){
     prcnt_dt[is.na(prcnt_dt)] <- 0
     lb <- rep('Indolent', nrow(prcnt_dt))
     lb[which(CDE[,class_col] == 'agg')] <- 'Aggressive'
@@ -356,7 +354,12 @@ frac_hm <- function(prcnt_dt, CDE, class_col){
         col = colr,
         simple_anno_size = unit(0.5, "cm")
     )
-    dt <- t(as.matrix(scale(prcnt_dt)))
+    if(scale_v){
+      dt <- t(as.matrix(scale(prcnt_dt)))
+    }else{
+      dt <- t(as.matrix(prcnt_dt))
+      }
+    
     dt[is.na(dt)] <- 0
     Heatmap(dt, name = "z-score",
             heatmap_legend_param = list(color_bar = "continuous"), 

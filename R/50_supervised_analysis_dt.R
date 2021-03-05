@@ -92,9 +92,9 @@ umap_f <- function(dt, sample_by_patient = TRUE, sample_k = 1000, col_id,
 # ALL CELLS UMAP
 ###############################################################################
 
-ft_cols <- col_id <- c(15,20,29:31,34,37,40,44,46,47)
-umap_smp <- umap_f(annot_df, sample_k = 1000, sample_by_patient = TRUE, 
-    col_id = ft_cols, subset = FALSE, seed = 65)
+ft_cols <- c(15,20,29,31,34,37,40,44,46,47) 
+umap_smp <- umap_f(annot_df, sample_k = 50000, sample_by_patient = FALSE, 
+    col_id = ft_cols, subset = FALSE, seed = 77) 
 
 save(umap_smp, file = "/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/supervised/UMAP_allcelltypes.RData")
 
@@ -160,3 +160,12 @@ umap_smp <- umap_f(annot_df, sample_k = 25000, sample_by_patient = FALSE,
     col_id = ft_cols, subset = TRUE, 
     subset_col='subtype_B', subset_nm='Myeloid', seed = 50)
 save(umap_smp, file = "/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/supervised/UMAP_mye.RData")
+
+###############################################################################
+# Other immune cells UMAP
+###############################################################################
+ft_cols <- c(18:22, 26, 28, 31, 35, 42, 50)
+umap_smp <- umap_f(annot_df, sample_k = 25000, sample_by_patient = FALSE, 
+    col_id = ft_cols, subset = TRUE, 
+    subset_col='subtype_B', subset_nm='Other_immune', seed = 50)
+save(umap_smp, file = "/Users/senosam/Documents/Massion_lab/CyTOF_summary/both/analysis/supervised/UMAP_otherimm.RData")

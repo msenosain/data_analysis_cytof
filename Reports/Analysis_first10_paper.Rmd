@@ -1012,7 +1012,7 @@ ggpubr::ggscatter(prcnt_by_pt, x = "CD8T_cells", y = c('ECCc_7', 'ECCc_8', 'ECCc
 
 ## Validation with TCGA data
 ```{r, echo=FALSE}
-tcga_adc <- read.table(file = '/Users/senosam/Documents/Massion_lab/RNA_seq/shilin\ TCGA/201908_tcgaDataDownload/GDCByTiger/LUAD.rnaseq2.fpkm.Primary_Solid_Tumor.tsv', sep = '\t', header = TRUE)
+tcga_adc <- read.table(file = '/Users/senosam/Documents/Massion_lab/RNA_seq_otherprojects/shilin\ TCGA/201908_tcgaDataDownload/GDCByTiger/LUAD.rnaseq2.fpkm.Primary_Solid_Tumor.tsv', sep = '\t', header = TRUE)
 tcga_adc_clinical <- read.csv(file = '/Users/senosam/Documents/Massion_lab/RNA_seq/shilin\ TCGA/201908_tcgaDataDownload/GDCByTiger/TCGA-LUAD.Clinicl.csv')
 ```
 
@@ -1110,16 +1110,18 @@ for (i in colnames(x)[grep("H",colnames(x))]){
     x_sub <- x[k,]
     high_i <- which(x_sub[,i] == 'high')
     low_i <- which(x_sub[,i] == 'low')
+    n_high <- length(high_i)
+    n_low <- length(low_i)
     high_med <- median(x_sub[high_i,'value'])
     low_med <- median(x_sub[low_i,'value'])
     pval <- wilcox.test(x_sub[high_i,'value'], x_sub[low_i,'value'])
-    sum_df <- rbind(sum_df, c(i, ii, high_med, low_med, pval$p.value))
+    sum_df <- rbind(sum_df, c(i, ii, n_high, n_low, high_med, low_med, pval$p.value))
     #cat(high_med, low_med, pval$p.value)
   }
 }
-colnames(sum_df) <- c('Gene', 'Cell type', 'Median.High', 'Median.Low', 'p.value')
+colnames(sum_df) <- c('Gene', 'Cell type', 'size.high', 'size.low', 'Median.High', 'Median.Low', 'p.value')
 sum_df['p.adjusted'] <- p.adjust(sum_df$p.value, method = "BH")
-#write.csv(sum_df, file = 'summary_xcellTCGA.csv')
+write.csv(sum_df, file = 'summary_xcellTCGA.csv')
 ```
 
 
@@ -1239,4 +1241,76 @@ ggplot(rs_prcnt, aes(x=CANARY, y=Percent, fill = CANARY)) +
 
 ```
 
+### Fig 5C
+```{r}
+# import data
+firstdist <- read.csv("/Users/senosam/Documents/Massion_lab/manuscripts/prelim_cytof_adc/sergey_rev/sergeyF5C_1stdist.csv")
 
+secdist <- read.csv("/Users/senosam/Documents/Massion_lab/manuscripts/prelim_cytof_adc/sergey_rev/sergeyF5C_2nddist.csv")
+
+```
+
+```{r}
+res <- function(dt){
+  LPSm <- median(dt$LPS)
+  SPSm <- median(na.omit(dt$SPS))
+  pv <- wilcox.test(log(dt$LPS), log(na.omit(dt$SPS)))$p.value
+  cat('LPS median = ', LPSm, '\n', 'SPS median = ', SPSm, '\n', 'p value = ', pv, '\n')
+}
+
+res(firstdist)
+res(secdist)
+```
+
+```{r}
+res <- function(dt){
+  LPSm <- mean(dt$LPS)
+  SPSm <- mean(na.omit(dt$SPS))
+  pv <- t.test(log(dt$LPS), log(na.omit(dt$SPS)))$p.value
+  cat('LPS mean = ', LPSm, '\n', 'SPS mean = ', SPSm, '\n', 'p value = ', pv, '\n')
+}
+
+res(firstdist)
+res(secdist)
+```
+
+
+```{r fig.width = 3, fig.height = 3} 
+canary <- c("#3498DB", "#EC7063")  
+firstdist <- na.omit(reshape2::melt(firstdist))
+ggplot(firstdist, aes(x=variable, y=value, fill = variable)) +
+  geom_boxplot() +
+  ggsignif::geom_signif(annotations = 'p=0.11', comparisons = list(c("LPS", "SPS")), 
+       map_signif_level=TRUE) +
+  theme(plot.title = element_text(hjust = 0.5, size=22))+
+  scale_fill_manual(values=canary)+
+  ylim(0, max(firstdist$value)+30) +
+  geom_jitter(shape=19, position=position_jitter(0.15), size=2)+
+  theme_bw() +
+  labs(title='Distance to 1st \n nearest tumor cell',x=NULL, y = "Distance (pixels)") +
+  theme(strip.text.x = element_text(size = 12), 
+          axis.text.x =element_text(size = 10), 
+          axis.text.y =element_text(size = 10),
+          axis.title=element_text(size=12),
+          plot.title = element_text(size=13, hjust = 0.5),
+          legend.position = "none")
+  
+
+secdist <- na.omit(reshape2::melt(secdist))
+ggplot(secdist, aes(x=variable, y=value, fill = variable)) +
+  geom_boxplot() +
+  ggsignif::geom_signif(annotations = 'p=0.19', comparisons = list(c("LPS", "SPS")), 
+       map_signif_level=TRUE) +
+  theme(plot.title = element_text(hjust = 0.5, size=22))+
+  scale_fill_manual(values=canary)+
+  ylim(0, max(secdist$value)+50) +
+  geom_jitter(shape=19, position=position_jitter(0.15), size=2)+
+  theme_bw() +
+  labs(title='Distance to 2nd \n nearest tumor cell',x=NULL, y = "Distance (pixels)") +
+  theme(strip.text.x = element_text(size = 12), 
+          axis.text.x =element_text(size = 10), 
+          axis.text.y =element_text(size = 10),
+          axis.title=element_text(size=12),
+          plot.title = element_text(size=13, hjust = 0.5),
+          legend.position = "none")
+```
